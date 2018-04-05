@@ -28,7 +28,7 @@ https://cran.rstudio.com/
 ### Assignment
 Vector is a single entity consisting of an ordered collection of numbers.
 ```{r}
-x <- c(1,2,3,4,5)
+x <- c(1,2,3,4,5) # c == combine
 print(x)
 ```
 ```{r}
@@ -85,7 +85,6 @@ rep(1, times = 5)
 You can also repeat a vector. By setting the parameter `times`, you will put the vector end-to-end in a new vector. By setting `each`, you will repeat each element of the vector before proceeding to the next one.
 ```{r}
 a <- 1:5
-rep(a, times = 3)
 rep(a, each = 3)
 ```
 
@@ -119,6 +118,7 @@ char1
 One very useful function for character vector is `paste`. The `paste()` function takes an arbitrary number of arguments and concatenates them one by one into character strings.
 ```{r}
 paste("Math", 189)
+paste0("Math", 189)
 paste(c("Math", "CSE"), c(100, 120))
 paste(c("Math", "CSE"), c(100, 120), sep = "")
 ```
@@ -131,6 +131,7 @@ Choose the elements of `x` that are larger than 3.
 ```{r}
 x <- c(1,2,3,4,5)
 y <- x[x > 3]
+y <- x[c(FALSE, FALSE, FALSE, TRUE, TRUE)]
 y
 ```
 Choose the elements of `x` that are not NA.
@@ -218,4 +219,3 @@ class(x)
 x <- array(1:4, dim=c(2,2))
 class(x)
 ```
-
