@@ -1,0 +1,131 @@
+---
+title: "Math 189/289 Lab 2"
+author: "Jiaqi Guo & L"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+# Get and Set Working Directory
+R has a working directory. This should be the main location to store external data files, as well as other code files.
+```{r}
+getwd()
+```
+One can also set the working directory to a desired location.
+```{r}
+setwd() # desired directory as argument
+getwd()
+```
+
+# Read in Data
+Please make sure the external data file is in the working directory. There are multiple functions to read in external data into R, depending on the file format. After reading in the external file, data is usually stored in an R dataframe. One can also peak into the data by using `head()` function.
+```{r}
+data <- read.table("babies.txt", header=TRUE)
+head(data)
+```
+
+# Summary of Data
+One of the most efficient way to learn about the data is through `summary()` function, which contains min, 1st quartile, median, mean, 3rd quartile, and max of each column.
+```{r}
+summary(data)
+```
+
+# Mean, standard deviations, and quantiles of data
+```{r}
+mean(data$bwt)
+sd(data$bwt)
+quantile(data$bwt)
+```
+### Quantiles
+$\alpha$-quantile of a random variable $X$, denoted as $q_\alpha$, is define as $P(X \leq q_\alpha) = \alpha$. This will require knowledge of the distribution $X$ follows. The quantile for normal distribution, for example, can be found using `qnorm()` function. This number for standard normal distribution is also known as the $z$-score. The sample quantile is available from the function `quantile()`.
+```{r}
+qnorm(0.95)
+quantile(data$bwt, 0.17)
+```
+
+# Acessing Data
+To access a column of the data, one can simply use `[...]` to select. A dataframe work similar as a matrix; however, it does offer additional flexibility and information in handling data. 
+For example, one can select a column of a dataframe by column number or column name. Both returns the same entry values. However, selecting by column number returns the raw data, whereas selecting by column name returns a dataframe with column information. Quotation marks are necessary, if column name is used for selection.
+```{r}
+data[,7] # This will return a vector
+```
+
+```{r}
+data['smoke'] # return a dataframe
+```
+Also, `$` may be used to access a certain data field, which is equivalent to selecting by column number.
+```{r}
+data$smoke # return a vector
+```
+
+Acessing certain rows of the data is usually straightforward using the row numbers. 
+```{r}
+data[100,]
+```
+In addition, we introduce selecting rows based on a certain condition here, which is useful in application. To see which rows contain observations of smokers, we use `which()` function, which returns indices of observations from smokers.
+```{r}
+smoker.ind <- which(data['smoke'] == 1)
+smoker.ind
+```
+To use the indices, we can pass in the vector of indices. Also, the `setdiff()` function is useful in set difference operations.
+```{r}
+data.smoker <- data[smoker.ind,]
+data.smoker
+data.nonsmoker <- data[-smoker.ind,]
+data.nonsmoker
+# Or we can use setdiff()
+nonsmoker.ind <- setdiff(rownames(data), smoker.ind)
+data.nonsmoker <- data[nonsmoker.ind,]
+data.nonsmoker
+```
+
+# Graphs from Data
+In many cases, graphs may be more straightforward than numeric values. We first introduce historgrams. Histrograms plot frequencies versus the values. Below is an application of the function `hist()`, a base function provided in R. 
+```{r}
+hist(data.nonsmoker$bwt, breaks = 30, col = rgb(0,0,1,1/4), probability = TRUE)
+hist(data.smoker$bwt, breaks = 30, col=rgb(1,0,0,1/4), add=TRUE, probability = TRUE)
+legend(150, 0.020, legend=c("smoker", "nonsmoker"),
+       col=c(rgb(0,0,1,1/4), rgb(1,0,0,1/4)), lwd = 4, cex=0.8)
+```
+
+In addition to histograms, boxplots provide visualization when comparing a column of multiple categories. The argument 'formula' of boxplot works much like an equation. It tells R the variable relation between two variables. This will come up again when we talk about regressions.
+```{r}
+boxplot(bwt~smoke, data)
+```
+Note that from the plots and summary statistics, one can often detect irregular values in data, which requires additional inspection and cleaning.
+```{r}
+irreg.index <- which(data$smoke == 9)
+data.irregular <- data[irreg.index,]
+data.irregular
+data.cleaned <- data[-irreg.index,]
+data.cleaned
+```
+
+# Check for Normality
+## 1. Histogram
+Sometimes you want to visualize if your data distribution is close to Normal. You can add a nice Normal distribution curve to `hist()` plot using the `curve()` function, in which you just specify a Normal density function with mean and standard deviation that is equal to the mean and standard deviation of the data.
+```{r}
+hist(data.smoker$bwt, breaks = 30, col = rgb(0,0,1,1/4), probability = TRUE)
+curve(dnorm(x, mean=mean(data$bwt), sd=sd(data$bwt)), add=TRUE, col='darkblue', lwd=2)
+```
+
+## 2.Skewness and Kurtosis
+```{r}
+# install.packages('moments')
+library(moments)
+skewness(data.smoker$bwt)
+kurtosis(data.smoker$bwt)
+```
+Interpretation: The *skewness* here is -0.03359498. This value implies that the distribution of the data is slightly skewed to the left or negatively skewed. It is skewed to the left because the computed value is negative, and is slightly, because the value is close to zero. For the *kurtosis*, we have 2.988032 implying that the distribution of the data is mesokurtic. A rule of thumb is: the kurtosis decreases as the tails become lighter, and it increases as the tails become heavier. And Tthe kurtosis of any univariate normal distribution is 3.
+
+## 3. Q-Q Plot (Quantile-Quantile Plot)
+Quantile-Quantile plot is useful for examining whether data follows a *normal distribution* closely or not. It is also used when trying to determine whether two samples come from a common distribution.
+```{r}
+qqnorm(data$bwt) # q-q plot against normal distribution
+qqline(data$bwt)
+```
+For two sample comparison, if the plotted points are mostly above or below the $y=x$ line, then one can tell that the two samples most likely have a different mean.
+```{r}
+qqplot(data.smoker$bwt, data.nonsmoker$bwt) # q-q plot of smoker and non-smoker samples
+abline(c(0,1)) # reference line
+```
