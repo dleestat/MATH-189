@@ -13,14 +13,14 @@ getwd()
 ```
 One can also set the working directory to a desired location.
 ```{r}
-setwd() # desired directory as argument
+setwd("/Users/Lee/Documents/UCSD/Courses/MATH 189/HW1") # desired directory as argument
 getwd()
 ```
 
 # Read in Data
 Please make sure the external data file is in the working directory. There are multiple functions to read in external data into R, depending on the file format. After reading in the external file, data is usually stored in an R dataframe. One can also peak into the data by using `head()` function.
 ```{r}
-data <- read.table("babies.txt", header=TRUE)
+data <- read.table("../HW1/babies.txt", header=TRUE)
 head(data)
 ```
 
