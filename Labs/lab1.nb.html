@@ -201,8 +201,8 @@ $(document).ready(function () {
 <p>Vector is a single entity consisting of an ordered collection of numbers.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBjKDEsMiwzLDQsNSlcbnByaW50KHgpXG5gYGAifQ== -->
-<pre class="r"><code>x &lt;- c(1,2,3,4,5)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBjKDEsMiwzLDQsNSkgIyBjID09IGNvbWJpbmVcbnByaW50KHgpXG5gYGAifQ== -->
+<pre class="r"><code>x &lt;- c(1,2,3,4,5) # c == combine
 print(x)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-output-begin eyJkYXRhIjoiWzFdIDEgMiAzIDQgNVxuIn0= -->
@@ -563,21 +563,38 @@ lab</code></pre>
 <p>The largest difference between <strong>array</strong> and <strong>vector</strong> is **array* object has a <code>dim</code> attribute. The <code>dim</code> of a vector is <code>NULL</code>.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBjKDEsMiwzLDQsNSlcbmRpbSh4KVxuY2xhc3MoeClcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBjKDEsMiwzLDQsNSlcbmRpbSh4KVxuYGBgIn0= -->
 <pre class="r"><code>x &lt;- c(1,2,3,4,5)
-dim(x)
-class(x)</code></pre>
+dim(x)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiTlVMTFxuIn0= -->
+<pre><code>NULL</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xhc3MoeClcbmBgYCJ9 -->
+<pre class="r"><code>class(x)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwibnVtZXJpY1wiXG4ifQ== -->
+<pre><code>[1] &quot;numeric&quot;</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>We can assign a <code>dim</code> attribute to make it an 1-by-5 array (matrix).</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZGltKHgpIDwtIGMoMSw1KVxuY2xhc3MoeClcbnhcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZGltKHgpIDwtIGMoMSw1KVxuY2xhc3MoeClcbmBgYCJ9 -->
 <pre class="r"><code>dim(x) &lt;- c(1,5)
-class(x)
-x</code></pre>
+class(x)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwibWF0cml4XCJcbiJ9 -->
+<pre><code>[1] &quot;matrix&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueFxuYGBgIn0= -->
+<pre class="r"><code>x</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdIFssMl0gWywzXSBbLDRdIFssNV1cblsxLF0gICAgMSAgICAyICAgIDMgICAgNCAgICA1XG4ifQ== -->
+<pre><code>     [,1] [,2] [,3] [,4] [,5]
+[1,]    1    2    3    4    5</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Now let’s create a 4-by-5 matrix.</p>
@@ -588,6 +605,13 @@ x</code></pre>
 dim(x) &lt;- c(4,5)
 x</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdIFssMl0gWywzXSBbLDRdIFssNV1cblsxLF0gICAgMSAgICA1ICAgIDkgICAxMyAgIDE3XG5bMixdICAgIDIgICAgNiAgIDEwICAgMTQgICAxOFxuWzMsXSAgICAzICAgIDcgICAxMSAgIDE1ICAgMTlcbls0LF0gICAgNCAgICA4ICAgMTIgICAxNiAgIDIwXG4ifQ== -->
+<pre><code>     [,1] [,2] [,3] [,4] [,5]
+[1,]    1    5    9   13   17
+[2,]    2    6   10   14   18
+[3,]    3    7   11   15   19
+[4,]    4    8   12   16   20</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>A more quick way to create the array(matrix) in previous example.</p>
@@ -597,6 +621,13 @@ x</code></pre>
 <pre class="r"><code>x &lt;- array(1:20, dim=c(4,5))
 x</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdIFssMl0gWywzXSBbLDRdIFssNV1cblsxLF0gICAgMSAgICA1ICAgIDkgICAxMyAgIDE3XG5bMixdICAgIDIgICAgNiAgIDEwICAgMTQgICAxOFxuWzMsXSAgICAzICAgIDcgICAxMSAgIDE1ICAgMTlcbls0LF0gICAgNCAgICA4ICAgMTIgICAxNiAgIDIwXG4ifQ== -->
+<pre><code>     [,1] [,2] [,3] [,4] [,5]
+[1,]    1    5    9   13   17
+[2,]    2    6   10   14   18
+[3,]    3    7   11   15   19
+[4,]    4    8   12   16   20</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -605,11 +636,22 @@ x</code></pre>
 <p>Extract a subarray (submatrix).</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBhcnJheSgxOjIwLCBkaW09Yyg0LDUpKVxueFszLDRdXG54W2MoMSwzLDQpLCBjKDIsNSldXG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBhcnJheSgxOjIwLCBkaW09Yyg0LDUpKVxueFszLDRdXG5gYGAifQ== -->
 <pre class="r"><code>x &lt;- array(1:20, dim=c(4,5))
-x[3,4]
-x[c(1,3,4), c(2,5)]</code></pre>
+x[3,4]</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDE1XG4ifQ== -->
+<pre><code>[1] 15</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueFtjKDEsMyw0KSwgYygyLDUpXVxuYGBgIn0= -->
+<pre class="r"><code>x[c(1,3,4), c(2,5)]</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdIFssMl1cblsxLF0gICAgNSAgIDE3XG5bMixdICAgIDcgICAxOVxuWzMsXSAgICA4ICAgMjBcbiJ9 -->
+<pre><code>     [,1] [,2]
+[1,]    5   17
+[2,]    7   19
+[3,]    8   20</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -619,14 +661,27 @@ x[c(1,3,4), c(2,5)]</code></pre>
 <p>At the end of lab 1, we will talk about class. All objects in R have a class, reported by the function <code>class</code>. It can be used to allow for an object-oriented style of programming in R. For example, in the later labs, we will learn different regression methods. Most of them will share the same prediction function <code>predict</code>. However, when you pass in different classes, the <code>predict</code> function will react to the argument sensitive to its class.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBOQVxuY2xhc3MoeClcbnggPC0gYygxLDIsMylcbmNsYXNzKHgpXG54IDwtIGFycmF5KDE6NCwgZGltPWMoMiwyKSlcbmNsYXNzKHgpXG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBOQVxuY2xhc3MoeClcbmBgYCJ9 -->
 <pre class="r"><code>x &lt;- NA
-class(x)
-x &lt;- c(1,2,3)
-class(x)
-x &lt;- array(1:4, dim=c(2,2))
 class(x)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwibG9naWNhbFwiXG4ifQ== -->
+<pre><code>[1] &quot;logical&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBjKDEsMiwzKVxuY2xhc3MoeClcbmBgYCJ9 -->
+<pre class="r"><code>x &lt;- c(1,2,3)
+class(x)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwibnVtZXJpY1wiXG4ifQ== -->
+<pre><code>[1] &quot;numeric&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueCA8LSBhcnJheSgxOjQsIGRpbT1jKDIsMikpXG5jbGFzcyh4KVxuYGBgIn0= -->
+<pre class="r"><code>x &lt;- array(1:4, dim=c(2,2))
+class(x)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwibWF0cml4XCJcbiJ9 -->
+<pre><code>[1] &quot;matrix&quot;</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 </div>
 
