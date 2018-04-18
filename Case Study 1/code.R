@@ -2,9 +2,11 @@
 install.packages('moments')
 install.packages('ggplot2')
 install.packages('plyr')
+install.packages('car')
 library(moments)
 library(ggplot2)
 library(plyr)
+library(car)
 
 # Import and clean babies23 dataset
 both_raw <- read.table("babies23.txt", header=TRUE)
@@ -19,6 +21,10 @@ for(i in 1:nrow(both)) {
     smoked <- c(smoked, 'Non-Smoker')
 }
 both <- cbind(babies23, smoked)
+
+# Add a column with standardized weights
+std_wt <- (both$wt- mean(both$wt))/sd(both$wt)
+both <- cbind(both, std_wt)
 
 # Separate dataset into smoker and non-smokers
 nonsmoker <- both[which(babies23$smoked=='Non-Smoker'),]
@@ -42,8 +48,10 @@ for(threshold in c(88.2,86,87,88,89,90)){
   
   with_underweight <- cbind(both, underweight)
   counts = table(with_underweight$underweight, both$smoked)
+  print(paste(threshold, ":", counts[1,1]/sum(counts[,1]), counts[1,2]/sum(counts[,2])))
   barplot(counts, main=paste('Low Birth Weights with Threshold', threshold, 'Ounces'), xlab='Low Birth Weight', ylab = 'Frequency', col=c('red','green'), legend = rownames(counts), beside=TRUE)
 }
+
 
 # Skewness and kurtosis histograms
 normal_skewness <- c()
@@ -100,43 +108,14 @@ for(threshold in c(88.2, seq(55,175,by=5))){
   print(chisq.test(table(both$smoked, underweight)))
 }
 
-# Gestation analysis
-preterm <-  c()
-for(i in 1:nrow(both)){
-  if (both[i,'gestation'] < 252){
-    preterm <- c(gesCheck1, 1)
-  } else {
-    preterm <- c(gesCheck1, 0)
-  }
-}
-with_preterm <- cbind(both, preterm)
-
-babies23_gest.ind <- which(smoker['gestation'] < 252)
-babies23_eb_sm <- smoker[babies23_gest.ind,]
-eb_sm <- nrow(babies23_eb_sm)
-num_sm <- nrow(smokers)
-gest_frequency_sm <- eb_sm/num_sm
-
-babies23_gest2.ind <- which(babies23_gen_nonsmoker['gestation'] < 252)
-babies23_eb_nsm <- babies23_gen_nonsmoker[babies23_gest2.ind,]
-eb_nsm <- nrow(babies23_eb_nsm)
-num_nsm <- nrow(babies23_gen_nonsmoker)
-gest_frequency_nsm <- eb_nsm/num_nsm
-
-gestation_nonsmokers <- nrow(babies23_gen_nonsmoker)
-gestation_total <- nrow(both)
-frequency_gestation_smokers <- gestation_smokers/gestation_total
-frequency_gestation_nonsmokers <- gestation_nonsmokers/gestation_total
-print(frequency_gestation_nonsmokers)
-print(frequency_gestation_smokers)
-
 # Calculate mean
-mu23 <- ddply(both, "smoke_status", summarise, grp23.mean = mean(std_wt))
+means <- ddply(both, 'smoked', summarise, grp.mean = mean(std_wt))
 
 # Basic histogram
 ggplot(nonsmoker, aes(x=bwt)) + geom_histogram(binwidth= 8)
 # Change colors
-p<-ggplot(smoker, aes(x=bwt)) + geom_histogram(color="black", fill="white")
+p<-ggplot(smoker, aes(x=wt)) + geom_histogram(color="black", fill="white")
+p
 
 # Histogram with density plot
 ggplot(nonsmoker, aes(x=wt)) + 
@@ -150,7 +129,7 @@ ggplot(smoker, aes(x=wt)) +
                                                      color="blue", linetype="dashed", size=1)
 
 # Comparison Histogram
-ggplot(both, aes(x= std_wt, color= status23, fill= status23)) +
+ggplot(both, aes(x=std_wt, color= status23, fill= status23)) +
   geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
   geom_density(alpha=0.6)+
   geom_vline(data=mu23, aes(xintercept=grp23.mean),
@@ -160,10 +139,10 @@ ggplot(both, aes(x= std_wt, color= status23, fill= status23)) +
   labs(title="Density Comparison - Standardized Baby Birth Weights of Mothers With Different Smoking Status",x="Standardized Birth Weight", y = "Density Among Population", size = 0)+
   theme_classic()
 
-ggplot(both, aes(x= std_wt, color= smoke_status, fill= smoke_status)) +
+ggplot(both, aes(x=std_wt, color=smoked, fill=smoked)) +
   geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
   geom_density(alpha=0.6)+
-  geom_vline(data=mu23, aes(xintercept=grp23.mean),
+  geom_vline(data=means, aes(xintercept=grp.mean),
              linetype="dashed")+
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
   scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
@@ -178,10 +157,15 @@ boxplot(wt~smoke_status, both, main = "BoxPlot- Standardized Baby Birth Weights 
 
 ## QQPlot
 library(car)
-qqnorm(babies23_gen_nonsmoker$std_wt, pch = 1, frame = FALSE)
-qqline(babies23_gen_nonsmoker$std_wt, col = "steelblue", lwd = 2)
-qqPlot(babies23_gen_nonsmoker$std_wt, xlab = "Theoretical Quantiles",
+qqnorm(nonsmoker$std_wt, pch = 1, frame = FALSE)
+qqline(nonsmoker$std_wt, col = "steelblue", lwd = 2)
+qqPlot(nonsmoker$std_wt, xlab = "Theoretical Quantiles",
        ylab = "Observed Quantiles", main = "QQ-Plot for Birth Weights of Babies Born to non-Smoking Mothers")
+
+qqnorm(smoker$std_wt, pch = 1, frame = FALSE)
+qqline(smoker$std_wt, col = "steelblue", lwd = 2)
+qqPlot(smoker$std_wt, xlab = "Theoretical Quantiles",
+       ylab = "Observed Quantiles", main = "QQ-Plot for Birth Weights of Babies Born to Smoking Mothers")
 
 qqplot(both$std_wt[both$smoke==1], both$std_wt[both$smoke!= 1],
        xlab = "Quantile of Standardized Birth Weights of Babies born to smokers",
