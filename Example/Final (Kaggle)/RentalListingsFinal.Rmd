@@ -1,0 +1,85 @@
+---
+title: "RentalListingsFinal"
+author: "Justin Glommen"
+date: "3/12/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("jsonlite", repos="http://cran.r-project.org")
+```
+
+# Data
+
+The dataset is provided by Two Sigma's Kaggle competition page. The dataset is in the JSON format, and so we must read it in for observation and manipulation.
+```{r}
+library('jsonlite')
+trainData <- fromJSON("train.json", simplifyDataFrame=TRUE)
+```
+
+## Categorization
+
+As the data is inputted via a JSON object, we must dissect it in order to utilize the numerical data.
+```{r}
+x <- 1
+trainBathrooms <- matrix(data = NaN, nrow = length(trainData$bathrooms), ncol = 1)
+trainPrices <- matrix(data = NaN, nrow = length(trainData$price), ncol = 1)
+trainInterests <- matrix(data = NaN, nrow = length(trainData$interest_level), ncol = 1)
+for (i in names(trainData$bathrooms)) {
+  trainBathrooms[x,1] <- trainData$bathrooms[[i]]
+  x <- x + 1
+}
+
+x <- 1
+for (i in names(trainData$price)) {
+  trainPrices[x,1] <- trainData$price[[i]]
+  x <- x + 1
+}
+
+x <- 1
+for (i in names(trainData$interest_level)) {
+  trainInterests[x,1] <- trainData$interest_level[[i]]
+  x <- x + 1
+}
+#hist(trainData$bathrooms[,1])
+#matrix <- data.frame(x1= trainData$bathrooms, x2= trainData$price)
+#correlation <- cor(matrix)
+#library("corrplot")
+#corrplot(correlation, method = "circle") #plot matrix
+```
+
+
+
+# Visualization
+After initializing and sorting the individual categories properly into useable formats, we want to begin the analysis and visualize the data.
+```{r}
+# Graph the train prices
+hist(trainPrices, breaks = 10000, xlim = c(0,11000))
+
+# Plot number of bathrooms and how it correlates to prices
+plot(trainBathrooms, trainPrices, ylim = c(0,11000))
+
+# Plot the categorized interest_levels and their frequencies
+plot(table(trainInterests))
+
+# Gather the high interest houses, plot the prices
+highInterest <- array(which(trainData$interest_level == "high"))
+mediumInterest <- array(which(trainData$interest_level == "medium"))
+lowInterest <- array(which(trainData$interest_level == "low"))
+
+hist(trainPrices[highInterest], breaks = 250, xlim = c(0,11000))
+hist(trainPrices[mediumInterest], breaks = 50, xlim = c(0,11000))
+hist(trainPrices[lowInterest], breaks = 10000, xlim = c(0,11000))
+
+# Plot the high interest houses versus the general interest houses prices
+generalPrices <- trainPrices
+highPrices <- trainPrices[highInterest]
+
+
+mean(trainPrices)
+mean(trainPrices[highInterest])
+mean(trainPrices[mediumInterest])
+mean(trainPrices[lowInterest])
+```
+

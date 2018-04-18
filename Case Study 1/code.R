@@ -1,144 +1,120 @@
-## Project 1: Babies' Weight Versus Smoking Parents
-## -------------Import Datasets-----------------
-babies <- read.table("babies.txt", header = TRUE)
-babies23 <- read.table("babies23.txt", header = TRUE)
+# Install and load packages
+install.packages('moments')
+install.packages('ggplot2')
+install.packages('plyr')
+library(moments)
+library(ggplot2)
+library(plyr)
 
-##---------------Data Cleaning------------------
-babies_cleaned <- data.frame()
-babies_cleanedin.ind <- which(babies['smoke'] != 9)
-babies_cleaned <- babies[babies_cleanedin.ind,]
-babies_cleanedin.ind <- which(babies_cleaned['weight'] != 999)
-babies_cleaned <- babies_cleaned[babies_cleanedin.ind,]
+# Import and clean babies23 dataset
+both_raw <- read.table("babies23.txt", header=TRUE)
+both <- babies23_raw[which(babies23['smoke']!=9), c('smoke','wt','gestation')]
 
-babies23_cleanedin.ind <- which(babies23['smoke'] != 9)
-babies23_cleaned <- babies23[babies23_cleanedin.ind,]
-
-##-----------------Standardized data---------------
-std_bwt <- (babies_cleaned$bwt- mean(babies_cleaned$bwt))/sd(babies_cleaned$bwt)
-babies_cleaned <- cbind(babies_cleaned, std_bwt)
-
-std_wt <- (babies23_cleaned$wt- mean(babies23_cleaned$wt))/sd(babies23_cleaned$wt)
-babies23_cleaned <- cbind(babies23_cleaned, std_wt)
-
-##------------------Data Subsetting--------------------
-babies_nosk.ind <- which(babies_cleaned['smoke'] == 0)
-babies_nonsmoker <- babies_cleaned[babies_nosk.ind,]
-babies_smoker <- babies_cleaned[-babies_nosk.ind,]
-
-babies23_nosk.ind <- which(babies23_cleaned['smoke'] == 0)
-babies23_sk.ind <- which(babies23_cleaned['smoke'] == 1)
-babies23_nfsk.ind <- which(babies23_cleaned['smoke'] == 2 | babies23_cleaned['smoke'] == 3)
-babies23_nonsmoker <- babies23_cleaned[babies23_nosk.ind,]
-babies23_smoker <- babies23_cleaned[babies23_sk.ind,]
-babies23_stopped_smoker <- babies23_cleaned[babies23_nfsk.ind,]
-
-babies23_skgl.ind <- which(babies23_cleaned['smoke'] != 0)
-babies23_gensmoker <- babies23_cleaned[babies23_skgl.ind,]
-
-babies23_gennosk.ind <- which(babies23_cleaned['smoke'] != 1)
-babies23_gen_nonsmoker <- babies23_cleaned[babies23_gennosk.ind,]
-
-##-----------------Export CSV File-----------------
-write.csv(babies_cleaned, "babies_cleaned.csv")
-write.csv(babies23_cleaned, "babies23_cleaned.csv")
-
-##---------Numerical value Computation-------------
-# Mean, SD, and Quantile Value of Babies Weight babies.txt Datasets
-summary(babies_cleaned)
-
-summary(babies23_smoker$wt)
-summary(babies23_nonsmoker$wt)
-summary(babies23_stopped_smoker$wt)
-summary(babies23_gensmoker$wt)
-summary(babies23_gen_nonsmoker$wt)
-summary(babies23_smoker$wt)
-
-##-----------------MonteCarloSimulation---------------------
-n = length(babies_cleaned)
-D_obs = chisq.test(babies_cleaned$bwt) # observed value of the test statistic
-B = 1000 # number of Montecarlo samples
-D_mc = numeric(B) # will store the simulated test statistics
-for (b in 1:B) {
-  X = sample(1:6, n, TRUE)
-  D_mc[b] = chisq.test(table(X))$bwt
+# Add a column indicating whether or not the mother smoked during pregnancy
+smoked <- c()
+for(i in 1:nrow(both)) {
+  if(both[i,'smoke']== 1)  # Smoked
+    smoked <- c(smoked, 'Smoker')
+  else
+    smoked <- c(smoked, 'Non-Smoker')
 }
-pval = (sum(D_mc >= D_obs) + 1)/(B + 1)
-pval
+both <- cbind(babies23, smoked)
 
-##----------------------t-test--------------------------
-t.test(babies_cleaned$std_bwt[babies_cleaned$smoke=="0"], babies_cleaned$std_bwt[babies_cleaned$smoke=="1"])
-t.test(babies23_cleaned$std_wt[babies23_cleaned$smoke == '0'], babies23_cleaned$std_wt[babies23_cleaned$smoke != "0"])
-t.test(babies23_gen_nonsmoker$gestation, babies23_smoker$gestation)
-##----------------------F-test--------------------------
-var.test(babies_cleaned$std_bwt[babies_cleaned$smoke == "0"],babies_cleaned$std_bwt[babies_cleaned$smoke == "1"])
-var.test(babies23_cleaned$std_wt[babies23_cleaned$smoke == "0"],babies23_cleaned$std_wt[babies23_cleaned$smoke != "0"])
+# Separate dataset into smoker and non-smokers
+nonsmoker <- both[which(babies23$smoked=='Non-Smoker'),]
+smoker <- both[which(both$smoked=='Smoker'),]
 
-##-----------------Incidence Testings--------- ----------
-##------------ Chi Square Test of Independence-----------
-# Chi Square Test of Independence for weight set as 88.2
-weightCheck_88 <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'wt'] < 88.2){
-    weightCheck_88 <- c(weightCheck_88, 0)
+# Summary statistics
+summary(both$wt)
+summary(nonsmoker$wt)
+summary(smoker$wt)
+
+# Frequency bar graphs
+for(threshold in c(88.2,86,87,88,89,90)){
+  underweight <- c()
+  
+  for(row in 1:nrow(both)){
+    if (both[row,'wt'] < threshold)
+      underweight <- c(underweight, 'Low Birth Weight')
+    else
+      underweight <- c(underweight, 'Normal Weight')
+  }
+  
+  with_underweight <- cbind(both, underweight)
+  counts = table(with_underweight$underweight, both$smoked)
+  barplot(counts, main=paste('Low Birth Weights with Threshold', threshold, 'Ounces'), xlab='Low Birth Weight', ylab = 'Frequency', col=c('red','green'), legend = rownames(counts), beside=TRUE)
+}
+
+# Skewness and kurtosis histograms
+normal_skewness <- c()
+normal_kurtosis <- c()
+nonsmoker_skewness <- c()
+nonsmoker_kurtosis <- c()
+smoker_skewness <- c()
+smoker_kurtosis <- c()
+
+for(i in 1:1000) {
+  normal_skewness <- c(normal_skewness, skewness(rnorm(nrow(nonsmoker))))
+  normal_kurtosis <- c(normal_kurtosis, kurtosis(rnorm(nrow(nonsmoker))))
+  
+  nonsmoker_skewness <- c(nonsmoker_skewness, skewness(sample(nonsmoker$wt,size=nrow(nonsmoker),replace=TRUE)))
+  nonsmoker_kurtosis <- c(nonsmoker_kurtosis, kurtosis(sample(nonsmoker$wt,size=nrow(nonsmoker),replace=TRUE)))
+  
+  smoker_skewness <- c(smoker_skewness, skewness(sample(smoker$wt,size=nrow(smoker),replace=TRUE)))
+  smoker_kurtosis <- c(smoker_kurtosis, kurtosis(sample(smoker$wt,size=nrow(smoker),replace=TRUE)))
+}
+print(paste('Skewness, kurtosis coefficient of Monte Carlo derived Normal distribution:', mean(normal_skewness), mean(normal_kurtosis)))
+print(paste('Skewness, kurtosis coefficient of distribution of all birth weights:', skewness(both$wt), kurtosis(both$wt)))
+print(paste('Skewness, kurtosis coefficient of distribution of nonsmoker birth weights:', skewness(nonsmoker$wt), kurtosis(nonsmoker$wt)))
+print(paste('Skewness, kurtosis coefficient of distribution of smoker birth weights:', skewness(smoker$wt), kurtosis(smoker$wt)))
+
+breaks <- seq(-1,1,by=0.1)
+hist(main='Skewness Coefficients of Monte Carlo Derived Distributions', normal_skewness, col=rgb(1,0,0,1/4), breaks=breaks, ylim=c(0,400))
+hist(nonsmoker_skewness, col=rgb(0,1,0,1/4), breaks=breaks, add=TRUE)
+hist(smoker_skewness, col=rgb(0,0,1,1/4), breaks=breaks, add=TRUE)
+legend('topright', c('normal', "smoker", "nonsmoker"), col=c(rgb(1,0,0,1/4),rgb(0,1,0,1/4),rgb(0,0,1,1/4)), lwd = 4, cex=0.8)
+
+breaks <- seq(1,5,by=0.15)
+hist(main='Kurtosis Coefficients of Monte Carlo Derived Distributions', normal_kurtosis, col=rgb(1,0,0,1/4), breaks=breaks, ylim=c(0,400))
+hist(nonsmoker_kurtosis, col=rgb(0,1,0,1/4), breaks=breaks, add=TRUE)
+hist(smoker_kurtosis, col=rgb(0,0,1,1/4), breaks=breaks, add=TRUE)
+legend('topright', c('normal', "smoker", "nonsmoker"), col=c(rgb(1,0,0,1/4),rgb(0,1,0,1/4),rgb(0,0,1,1/4)), lwd = 4, cex=0.8)
+
+# T-tests
+t.test(nonsmoker$wt, smoker$wt)
+t.test(nonsmoker$gestation, smoker$gestation)
+
+# Chi-squared test of independence
+for(threshold in c(88.2, seq(55,175,by=5))){
+  underweight <- c()
+  
+  for(row in 1:nrow(both)){
+    if (both[row,'wt'] < threshold){
+      underweight <- c(underweight, 1)
+    } else {
+      underweight <- c(underweight, 0)
+    }
+  }
+  print(paste('Percentage of low birth weight babies with low birth weight threshold of ', threshold, 'ounces: ', sum(underweight==1), '/', length(underweight)))
+  print('Chi-squared test:')
+  print(chisq.test(table(both$smoked, underweight)))
+}
+
+# Gestation analysis
+preterm <-  c()
+for(i in 1:nrow(both)){
+  if (both[i,'gestation'] < 252){
+    preterm <- c(gesCheck1, 1)
   } else {
-    weightCheck_88 <- c(weightCheck_88, 1)
+    preterm <- c(gesCheck1, 0)
   }
 }
-babies23_cleaned <- cbind(babies23_cleaned, weightCheck_88)
-chisq.test(table(babies23_cleaned$smoke, babies23_cleaned$weightCheck_88))
+with_preterm <- cbind(both, preterm)
 
-#Chi Square Test of Independence for weight set as 85
-weightCheck_85 <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'wt'] < 85){
-    weightCheck_85 <- c(weightCheck_85, 0)
-  } else {
-    weightCheck_85 <- c(weightCheck_85, 1)
-  }
-}
-babies23_cleaned <- cbind(babies23_cleaned, weightCheck_85)
-chisq.test(table(babies23_cleaned$smoke, babies23_cleaned$weightCheck_85))
-
-# Chi Square Test of Independence for weight set as 81
-weightCheck_81 <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'wt'] < 81){
-    weightCheck_81 <- c(weightCheck_81, 0)
-  } else {
-    weightCheck_81 <- c(weightCheck_81, 1)
-  }
-}
-babies23_cleaned <- cbind(babies23_cleaned, weightCheck_81)
-chisq.test(table(babies23_cleaned$smoke, babies23_cleaned$weightCheck_81))
-
-# Chi Square Test of Independence for weight set as 100
-weightCheck_100 <-  c()
-for(i in 1:nrow(babies_cleaned)){
-  if (babies_cleaned[i,'bwt'] < 100){
-    weightCheck_100 <- c(weightCheck_100, 0)
-  } else {
-    weightCheck_100 <- c(weightCheck_100, 1)
-  }
-}
-babies_cleaned <- cbind(babies_cleaned, weightCheck_100)
-chisq.test(table(babies_cleaned$smoke, babies_cleaned$weightCheck_100))
-
-
-#-------------------Fifth Question----------------------
-gesCheck1 <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'gestation'] < 252){
-    gesCheck1 <- c(gesCheck1, 0)
-  } else {
-    gesCheck1 <- c(gesCheck1, 1)
-  }
-}
-babies23_cleaned <- cbind(babies23_cleaned, gesCheck1)
-
-babies23_gest.ind <- which(babies23_smoker['gestation'] < 252)
-babies23_eb_sm <- babies23_smoker[babies23_gest.ind,]
+babies23_gest.ind <- which(smoker['gestation'] < 252)
+babies23_eb_sm <- smoker[babies23_gest.ind,]
 eb_sm <- nrow(babies23_eb_sm)
-num_sm <- nrow(babies23_smoker)
+num_sm <- nrow(smokers)
 gest_frequency_sm <- eb_sm/num_sm
 
 babies23_gest2.ind <- which(babies23_gen_nonsmoker['gestation'] < 252)
@@ -148,91 +124,33 @@ num_nsm <- nrow(babies23_gen_nonsmoker)
 gest_frequency_nsm <- eb_nsm/num_nsm
 
 gestation_nonsmokers <- nrow(babies23_gen_nonsmoker)
-gestation_total <- nrow(babies23_cleaned)
+gestation_total <- nrow(both)
 frequency_gestation_smokers <- gestation_smokers/gestation_total
 frequency_gestation_nonsmokers <- gestation_nonsmokers/gestation_total
 print(frequency_gestation_nonsmokers)
 print(frequency_gestation_smokers)
-##-----------------Data Visualization------------------
-## Histogram
-# Add smoke status to babies data frame
-status <-  c()
-for(i in 1:nrow(babies_cleaned)){
-  if (babies_cleaned[i,'smoke'] ==0){
-    status <- c(status, 'no')
-  } else {
-    status <- c(status, 'yes')
-  }
-}
-babies_cleaned <- cbind(babies_cleaned, status)
 
-status23 <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'smoke'] == 0 ){
-    status23 <- c(status23, 'Non-Smokers')
-  } else if (babies23_cleaned[i,'smoke'] ==1){
-    status23 <- c(status23, 'Smokers')
-  } else{
-    status23 <- c(status23, 'Stopped-Smokers')
-  }
-}
-babies23_cleaned <- cbind(babies23_cleaned, status23)
-
-smoke_status <-  c()
-for(i in 1:nrow(babies23_cleaned)){
-  if (babies23_cleaned[i,'smoke'] == 1 ){
-    smoke_status <- c(smoke_status, 'Smokers')
-  } else {
-    smoke_status <- c(smoke_status, 'Non-Smokers')
-  }
-}
-babies23_cleaned <- cbind(babies23_cleaned, smoke_status)
-
-# import packages
-library(ggplot2)
-library(plyr)
 # Calculate mean
-mu <- ddply(babies_cleaned, "smoke", summarise, grp.mean=mean(std_bwt))
-mu23 <- ddply(babies23_cleaned, "smoke_status", summarise, grp23.mean = mean(std_wt))
+mu23 <- ddply(both, "smoke_status", summarise, grp23.mean = mean(std_wt))
 
 # Basic histogram
-ggplot(babies_nonsmoker, aes(x=bwt)) + geom_histogram(binwidth= 8)
+ggplot(nonsmoker, aes(x=bwt)) + geom_histogram(binwidth= 8)
 # Change colors
-p<-ggplot(babies_nonsmoker, aes(x=bwt)) + geom_histogram(color="black", fill="white")
+p<-ggplot(smoker, aes(x=bwt)) + geom_histogram(color="black", fill="white")
 
 # Histogram with density plot
-ggplot(babies_nonsmoker, aes(x=bwt)) + 
-  geom_histogram(aes(y=..density..), colour="black", fill="white")+
-  geom_density(alpha=.2, fill="#FF6666")+ geom_vline(aes(xintercept=mean(bwt)),
-                                                     color="blue", linetype="dashed", size=1)
-
-ggplot(babies_smoker, aes(x=bwt)) + 
-  geom_histogram(aes(y=..density..), colour="black", fill="white")+
-  geom_density(alpha=.2, fill="#FF6666")+ geom_vline(aes(xintercept=mean(bwt)),
-                                                     color="blue", linetype="dashed", size=1)
-
-ggplot(babies23_nonsmoker, aes(x=wt)) + 
+ggplot(nonsmoker, aes(x=wt)) + 
   geom_histogram(aes(y=..density..), colour="black", fill="white")+
   geom_density(alpha=.2, fill="#FF6666")+ geom_vline(aes(xintercept=mean(wt)),
                                                      color="blue", linetype="dashed", size=1)
 
-ggplot(babies23_smoker, aes(x=wt)) + 
+ggplot(smoker, aes(x=wt)) + 
   geom_histogram(aes(y=..density..), colour="black", fill="white")+
   geom_density(alpha=.2, fill="#FF6666")+ geom_vline(aes(xintercept=mean(wt)),
                                                      color="blue", linetype="dashed", size=1)
 
 # Comparison Histogram
-ggplot(babies_cleaned, aes(x=std_bwt, color=status, fill=status)) +
-  geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
-  geom_density(alpha=0.6)+
-  geom_vline(data=mu, aes(xintercept=grp.mean),
-             linetype="dashed")+
-  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
-  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
-  labs(title="Weight density plot",x="Standardized Weight", y = "Density")+
-  theme_classic()
-
-ggplot(babies23_cleaned, aes(x= std_wt, color= status23, fill= status23)) +
+ggplot(both, aes(x= std_wt, color= status23, fill= status23)) +
   geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
   geom_density(alpha=0.6)+
   geom_vline(data=mu23, aes(xintercept=grp23.mean),
@@ -242,7 +160,7 @@ ggplot(babies23_cleaned, aes(x= std_wt, color= status23, fill= status23)) +
   labs(title="Density Comparison - Standardized Baby Birth Weights of Mothers With Different Smoking Status",x="Standardized Birth Weight", y = "Density Among Population", size = 0)+
   theme_classic()
 
-ggplot(babies23_cleaned, aes(x= std_wt, color= smoke_status, fill= smoke_status)) +
+ggplot(both, aes(x= std_wt, color= smoke_status, fill= smoke_status)) +
   geom_histogram(aes(y=..density..), position="identity", alpha=0.5)+
   geom_density(alpha=0.6)+
   geom_vline(data=mu23, aes(xintercept=grp23.mean),
@@ -253,47 +171,19 @@ ggplot(babies23_cleaned, aes(x= std_wt, color= smoke_status, fill= smoke_status)
   theme_classic()
 
 ## Boxplot (Use to compare median)
-boxplot(bwt~smoke, babies_cleaned)
-boxplot(std_wt~smoke, babies23_cleaned, main = "BoxPlot- Standardized Baby Birth Weights of Mothers With Different Smoking Status", xlab = "Mothers' smoking status", ylab = "Babies' Birth Weight")
-boxplot(wt~smoke_status, babies23_cleaned, main = "BoxPlot- Standardized Baby Birth Weights of Mothers With Different Smoking Status", xlab = "Mothers' smoking status", ylab = "Babies' Birth Weight")
+boxplot(std_wt~smoke, both, main = "BoxPlot- Standardized Baby Birth Weights of Mothers With Different Smoking Status", xlab = "Mothers' smoking status", ylab = "Babies' Birth Weight")
+boxplot(wt~smoke_status, both, main = "BoxPlot- Standardized Baby Birth Weights of Mothers With Different Smoking Status", xlab = "Mothers' smoking status", ylab = "Babies' Birth Weight")
 # IQR is the length of the edge of the box, and anything
 # beyond the Whisker will be the outlier cases
 
-# Skewness and Kurtosis
-install.packages('moments')
-library(moments)
-skewness(babies_nonsmoker$bwt)
-kurtosis(babies_nonsmoker$bwt)
-skewness(babies_smoker$bwt)
-kurtosis(babies_smoker$bwt)
-
-skewness(babies23_nonsmoker$wt)
-kurtosis(babies23_nonsmoker$wt)
-skewness(babies23_smoker$wt)
-kurtosis(babies23_smoker$wt)
-skewness(babies23_stopped_smoker$wt)
-kurtosis(babies23_stopped_smoker$wt)
-# If the distribution is flatter, it has larger kurtosis
-# If any of the two data is very different than the normal
-# distributrion, it is less likely to be a normal distribution
-
 ## QQPlot
 library(car)
-qqnorm(babies_nonsmoker$bwt, pch = 1, frame = FALSE)
-qqline(babies_nonsmoker$bwt, col = "steelblue", lwd = 2)
-qqPlot(babies_nonsmoker$bwt)
-
-qqnorm(babies_smoker$bwt, pch = 1, frame = FALSE)
-qqline(babies_smoker$bwt, col = "steelblue", lwd = 2)
-qqPlot(babies_smoker$bwt, xlab = "Theoretical Quantiles",
-       ylab = "Observed Quantiles", main = "QQ-Plot for Birth Weights of Babies Born to Smoking Mothers")
-
 qqnorm(babies23_gen_nonsmoker$std_wt, pch = 1, frame = FALSE)
 qqline(babies23_gen_nonsmoker$std_wt, col = "steelblue", lwd = 2)
 qqPlot(babies23_gen_nonsmoker$std_wt, xlab = "Theoretical Quantiles",
        ylab = "Observed Quantiles", main = "QQ-Plot for Birth Weights of Babies Born to non-Smoking Mothers")
 
-qqplot(babies23_cleaned$std_wt[babies23_cleaned$smoke==1], babies23_cleaned$std_wt[babies23_cleaned$smoke!= 1],
+qqplot(both$std_wt[both$smoke==1], both$std_wt[both$smoke!= 1],
        xlab = "Quantile of Standardized Birth Weights of Babies born to smokers",
        ylab = "Quantile of Standardized Birth Weights of Babies born to non-smokers", main = "QQ-Plot Comparison for Babies' Birth Weights Based on Mothers' Smoking Status")
-qqline(babies23_cleaned$std_wt[babies23_cleaned$smoke==1], babies23_cleaned$std_wt[babies23_cleaned$smoke!= 1])
+qqline(both$std_wt[both$smoke==1], both$std_wt[both$smoke!= 1])
