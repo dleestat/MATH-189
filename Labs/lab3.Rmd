@@ -19,7 +19,7 @@ In order to verify the central limit theorem (CLT), we generate a sample of i.i.
 
 ```{r}
 clt <- function(n){
-  mean.obs <- rep(NA, n)
+  mean.obs <- rep(NA, 1000)
   for (i in 1:1000){
     mean.obs[i] <- mean(rexp(n))
   }
@@ -37,6 +37,7 @@ hist(mean.100, probability=TRUE)
 curve(dnorm(x, mean=1, sd=1/sqrt(100)), add=TRUE, col='darkblue', lwd=2)
 hist(mean.1000, probability=TRUE)
 curve(dnorm(x, mean=1, sd=1/sqrt(1000)), add=TRUE, col='darkblue', lwd=2)
+?curve
 ```
 
 Furthermore, we demonstrate how the variance of the sample mean estimator changes with sample size. We increment the sample size from $10$ to $1000$ with step size of $10$, and repeat the experiment procedure for $1000$ times as before for each choice of sample size. We examine the standard deviations of the sample mean estimators.
@@ -66,6 +67,7 @@ Then in that sense, we might not have observed every one of these responses as i
 n <- 300
 ind.sample <- sample.int(n=N, size=n)
 data.sample <- data.population[ind.sample]
+# data.sample <- sample(data.population, size=n)
 ```
 
 ## Sample Statistics
@@ -85,6 +87,7 @@ where $s$ is the sample standard deviation. Note that this simple confidence int
 ```{r}
 width <- 2*sd(data.sample)/sqrt(n)
 int.simple <- c(mean.sample - width, mean.sample + width)
+int.simple
 ```
 
 ## Finite Sample Population Correction
@@ -109,7 +112,7 @@ sample(1:10, size = 10, replace = T)
 ## Bootstrap
 Suppose we want to find the point estimate of the proportion of male in the population and its confidence interval. Note that the *sex* variable is 1 if the student is male and 0 if female. Then the point estimation of the proportion of male is:
 ```{r}
-data <- read.table("videodata.txt", header=TRUE)
+data <- read.table("../Case Study 2/videodata.txt", header=TRUE)
 male.percentage <- mean(data$sex)
 male.percentage
 ```
@@ -117,6 +120,7 @@ male.percentage
 Now we also want to have a confidence interval of this estimator. However, clearly the distribution of *sex* variable is not Normal, it is a Bernoulli random variable. We know our data were drawn from a population with size $N = 314$. Hence, we first create a bootstrap population of this size by repeating every sample for $\frac{314}{91} = 3.45$ times. Here, we'll just specify the parameter *length.out* to be 314.
 
 ```{r}
+# Method 1 (Creating a population from a sample, then sampling without replacement)
 boot.population <- rep(data$sex, length.out = 314)
 length(boot.population)
 ```
