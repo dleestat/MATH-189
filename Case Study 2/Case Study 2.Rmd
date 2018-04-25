@@ -1,0 +1,11 @@
+---
+title: "Code for Case Study 2. Who Plays Video Games"
+output: html_notebook
+---
+
+```{r}
+raw <- read.table("videodata.txt", header=TRUE)
+summary(raw)
+hist(raw$time)
+raw
+```
