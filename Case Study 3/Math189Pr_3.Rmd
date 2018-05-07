@@ -19,7 +19,6 @@ set.seed(2017)
 N <- 229354
 n <- 296
 pop <- sample.int( N, size = n)
-pop
 ```
 
 # Visulization of palindrome location distribution
@@ -41,11 +40,8 @@ Group the data by dividing the interval [0,230000] into 45 sub-intervals and cou
 ```{r}
 k <- 45
 tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
-tab
 counts <- as.vector(tab)
-counts
 ```
-
 Using graphical methods to compare a generated Poisson(Theoretical) sequence and the distribution of the palindromes counts in bins of locations.
 Remark:
 The pink histogram and the red density curve represents the distribution and density for actual data.
@@ -113,7 +109,6 @@ pop.shifted <- pop1[-1]
 pop.original <- pop1[-length(pop)]
 distance <- pop.shifted-pop.original
 distance <- abs(distance)
-distance
 ```
 
 
@@ -148,7 +143,7 @@ p_value
 # Visualization of the Residual
 ```{r}
 Residuals <- (counts.obs - counts.theo) / sqrt(counts.theo)
-plot(Residuals, type = 'h', ylab = "standardized residuals", xlab = "interval index")
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual")
 ```
 
 Testing for spacings
