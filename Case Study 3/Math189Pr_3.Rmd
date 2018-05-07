@@ -75,6 +75,7 @@ hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
+
 ```{r}
 i <- 100
 tab <- table(cut(pop, breaks = seq(0, 230000, length.out = i+1), include.lowest = TRUE))
@@ -88,6 +89,7 @@ hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
+
 ```{r}
 d<- 1000
 tab <- table(cut(pop, breaks = seq(0, 230000, length.out = d+1), include.lowest = TRUE))
@@ -106,8 +108,9 @@ Since the shape of the distibutions are nearly the same while the length of sub-
 
 # Visulization of palindrome spacings distribution
 ```{r}
-pop.shifted <- pop[-1]
-pop.original <- pop[-length(pop)]
+pop1 = sort(pop, decreasing = FALSE)
+pop.shifted <- pop1[-1]
+pop.original <- pop1[-length(pop)]
 distance <- pop.shifted-pop.original
 distance <- abs(distance)
 distance
@@ -115,35 +118,53 @@ distance
 
 
 ```{r}
-hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.00001))
+hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.001))
 lines(density(distance, adjust = 2), col = rgb(1,0,0,0.5))
 Expo <- rexp(1000, rate = 1/mean(distance))
-hist(Expo, breaks = 20, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+hist(Expo, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Expo, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 
 ```
 
-# Hypothesis Testing
 # Chi-square Goodness of Fit Test
+Testing for Counts
 Group the data by dividing the interval [0,230000] into 45 sub-intervals and count how many data points are inside each of them.
 ```{r}
-# Still Figuring Out (Method may be inaccurate, cuz Unreasonable Output)
-k <- 57
-lambda <- n/k
+k <- 45
+counts.theo <- n/k
 tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
 counts.obs <- as.vector(tab)
-counts.theo <- c()
-for (i in counts.obs){
-  theo <- k* exp(-lambda)* lambda**i /factorial(i)
-  counts.theo <- c(counts.theo, theo)
-}
-sum((counts.obs-counts.theo)**2/counts.theo)
+chi_2 <- sum((counts.obs - counts.theo)^2/counts.theo)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = 44)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = 44, lower.tail = FALSE)
+p_value
 ```
 
-# Visulization of the Residual
+# Visualization of the Residual
 ```{r}
+Residuals <- (counts.obs - counts.theo) / sqrt(counts.theo)
+plot(Residuals, type = 'h', ylab = "standardized residuals", xlab = "interval index")
+```
 
+Testing for spacings
+```{r}
+# Need to be revised
+k <- 45
+spacings.theo <- N/k
+spacings.obs <- distance
+chi_2 <- sum((spacings.obs - spacings.theo)^2/spacings.theo)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = 44)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = 44, lower.tail = FALSE)
+p_value
 ```
 
 # Design Test Statistic Testing for the Maximum Cluster
