@@ -18,29 +18,41 @@ set.seed(2017)
 # Generate simple random sample
 N <- 229354
 n <- 296
-theo <- sample.int( N, size = n)
-theo
+pop <- sample.int( N, size = n)
+pop
 ```
 
-# Visulization of the distribution of palindrome sites location
+# Visulization of palindrome location distribution
+Using graphical methods to examine if the locations follow uniform distribution.
+The yellow histogram and the blue density curve represents the distribution and density for generated simple random sample.
+The green histogram and the red density curve represents distribution for actual data.
+The purple histogram represents the overlapped area.
 ```{r}
-hist(theo, breaks = 100, probability = TRUE, col = 3, main = "Simple Random Sample Distribution")
-lines(density(theo, adjust = 2), col = 2)
-hist(location$location, breaks = 100, probability = TRUE, col = 3, main = 'Actual Data Distribution')
+hist(pop, breaks = 100, probability = TRUE, col = 7, main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
+lines(density(pop, adjust = 2), col = 4)
+hist(location$location, breaks = 100, probability = TRUE, col = 3, add = TRUE)
 lines(density(location$location, adjust = 2), col = 2)
 ```
+Conclusion:
+Graphically, the distribution of the locations of palindromes approximately follows uniform distribution. 
 
+# Visulization of palindrome counts distribution
+Group the data by dividing the interval [0,230000] into 45 sub-intervals and count how many data points are inside each of them.
 ```{r}
-# Group the data (Still Figuring out)
 k <- 45
-tab <- table(cut(theo, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
+tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
 tab
 counts <- as.vector(tab)
 counts
 ```
 
+Using graphical methods to compare a generated Poisson(Theoretical) sequence and the distribution of the palindromes counts in bins of locations.
+Remark:
+The pink histogram and the red density curve represents the distribution and density for actual data.
+The light blue histogram and the blue density curve represents distribution for generated Poisson sequence.
+The purple histogram represents the overlapped area.
 ```{r}
-hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, xlab = "number of points inside an interval", ylim = c(0,0.2))
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 45)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
 lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
 Pois <- rpois(1000, lambda = mean(counts))
 hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
@@ -48,13 +60,100 @@ lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
 
+# Additional testings on using different lengths of sub-intervals:
+```{r}
+j <- 10
+tab <- table(cut(pop, breaks = seq(0, 230000, length.out = j+1), include.lowest = TRUE))
+tab
+counts <- as.vector(tab)
+counts
 
-## Including Plots
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 10)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(1000, lambda = mean(counts))
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+```{r}
+i <- 100
+tab <- table(cut(pop, breaks = seq(0, 230000, length.out = i+1), include.lowest = TRUE))
+tab
+counts <- as.vector(tab)
+counts
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 100)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.55))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(1000, lambda = mean(counts))
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+```{r}
+d<- 1000
+tab <- table(cut(pop, breaks = seq(0, 230000, length.out = d+1), include.lowest = TRUE))
+tab
+counts <- as.vector(tab)
+counts
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 1000)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,1))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(1000, lambda = mean(counts))
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+Conclusion: 
+Since the shape of the distibutions are nearly the same while the length of sub-intervals is changing, the distribution of palindromes counts approximately follows Poisson Distribution graphically.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Visulization of palindrome spacings distribution
+```{r}
+pop.shifted <- pop[-1]
+pop.original <- pop[-length(pop)]
+distance <- pop.shifted-pop.original
+distance <- abs(distance)
+distance
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.00001))
+lines(density(distance, adjust = 2), col = rgb(1,0,0,0.5))
+Expo <- rexp(1000, rate = 1/mean(distance))
+hist(Expo, breaks = 20, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Expo, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
+```
+
+# Hypothesis Testing
+# Chi-square Goodness of Fit Test
+Group the data by dividing the interval [0,230000] into 45 sub-intervals and count how many data points are inside each of them.
+```{r}
+# Still Figuring Out (Method may be inaccurate, cuz Unreasonable Output)
+k <- 57
+lambda <- n/k
+tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
+counts.obs <- as.vector(tab)
+counts.theo <- c()
+for (i in counts.obs){
+  theo <- k* exp(-lambda)* lambda**i /factorial(i)
+  counts.theo <- c(counts.theo, theo)
+}
+sum((counts.obs-counts.theo)**2/counts.theo)
+```
+
+# Visulization of the Residual
+```{r}
+
+```
+
+# Design Test Statistic Testing for the Maximum Cluster
+```{r}
+
+```
+
+# Additional Question and Hypothesis
+```{r}
+
+```
+
+
