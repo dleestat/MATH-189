@@ -5,162 +5,223 @@ output: html_document
 
 Overall Question: How do we find clusters of palindromes? How do we determine whether a cluster is just a chance occurrence or a potential replication site?
 
-# Import Dataset
+## Import Dataset
 ```{r}
 location <- read.table("hcmv-25kgjn1-1rfrtkc.txt", header = TRUE)
 raw <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
 ```
 
-# Random Scatter
+## Random Scatter
 Generate structure that examine the locations of the palindromes. Simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. 
 ```{r}
 set.seed(2017)
 # Generate simple random sample
 N <- 229354
 n <- 296
-pop <- sample.int( N, size = n)
+theo <- sample.int(N, size = n)
 ```
 
-# Visulization of palindrome location distribution
+## Location
+# Visulization of palindrome location distribution vs Uniform distribution
 Using graphical methods to examine if the locations follow uniform distribution.
-The yellow histogram and the blue density curve represents the distribution and density for generated simple random sample.
-The green histogram and the red density curve represents distribution for actual data.
+The pink histogram and the red density curve represents distribution for actual data.
+The light blue histogram and the blue density curve represents the distribution and density for the simulated simple random sample.
 The purple histogram represents the overlapped area.
 ```{r}
-hist(pop, breaks = 100, probability = TRUE, col = 7, main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
-lines(density(pop, adjust = 2), col = 4)
-hist(location$location, breaks = 100, probability = TRUE, col = 3, add = TRUE)
-lines(density(location$location, adjust = 2), col = 2)
+hist(pop, breaks = 20, probability = TRUE, col = rgb(1,0,0,0.5), main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
+lines(density(pop, adjust = 2), col = 2)
+pop <- location$location
+hist(theo,breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
+lines(density(theo, adjust = 2), col = 4)
+legend(x = 180000, y = 0.000008, legend = c("Sample", "Uniform"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
-Conclusion:
-Graphically, the distribution of the locations of palindromes approximately follows uniform distribution. 
-
-# Visulization of palindrome counts distribution
-Group the data by dividing the interval [0,230000] into 45 sub-intervals and count how many data points are inside each of them.
-```{r}
-k <- 45
-tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
-counts <- as.vector(tab)
-```
-Using graphical methods to compare a generated Poisson(Theoretical) sequence and the distribution of the palindromes counts in bins of locations.
-Remark:
-The pink histogram and the red density curve represents the distribution and density for actual data.
-The light blue histogram and the blue density curve represents distribution for generated Poisson sequence.
-The purple histogram represents the overlapped area.
-```{r}
-hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 45)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
-lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
-Pois <- rpois(1000, lambda = mean(counts))
-hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-```
-
-# Additional testings on using different lengths of sub-intervals:
-```{r}
-j <- 10
-tab <- table(cut(pop, breaks = seq(0, 230000, length.out = j+1), include.lowest = TRUE))
-tab
-counts <- as.vector(tab)
-counts
-
-hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 10)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
-lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
-Pois <- rpois(1000, lambda = mean(counts))
-hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-```
-
-```{r}
-i <- 100
-tab <- table(cut(pop, breaks = seq(0, 230000, length.out = i+1), include.lowest = TRUE))
-tab
-counts <- as.vector(tab)
-counts
-hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 100)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.55))
-lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
-Pois <- rpois(1000, lambda = mean(counts))
-hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-```
-
-```{r}
-d<- 1000
-tab <- table(cut(pop, breaks = seq(0, 230000, length.out = d+1), include.lowest = TRUE))
-tab
-counts <- as.vector(tab)
-counts
-hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (Sub-interval length = 1000)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,1))
-lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
-Pois <- rpois(1000, lambda = mean(counts))
-hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-```
-Conclusion: 
-Since the shape of the distibutions are nearly the same while the length of sub-intervals is changing, the distribution of palindromes counts approximately follows Poisson Distribution graphically.
-
-# Visulization of palindrome spacings distribution
-```{r}
-pop1 = sort(pop, decreasing = FALSE)
-pop.shifted <- pop1[-1]
-pop.original <- pop1[-length(pop)]
-distance <- pop.shifted-pop.original
-distance <- abs(distance)
-```
-
-
-```{r}
-hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.001))
-lines(density(distance, adjust = 2), col = rgb(1,0,0,0.5))
-Expo <- rexp(1000, rate = 1/mean(distance))
-hist(Expo, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Expo, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 14, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-
-```
-
 # Chi-square Goodness of Fit Test
-Testing for Counts
-Group the data by dividing the interval [0,230000] into 45 sub-intervals and count how many data points are inside each of them.
 ```{r}
-k <- 45
-counts.theo <- n/k
-tab <- table(cut(pop, breaks = seq(0, 230000, length.out = k+1), include.lowest = TRUE))
-counts.obs <- as.vector(tab)
-chi_2 <- sum((counts.obs - counts.theo)^2/counts.theo)
+k <- 61
+locations.theo <- n/k
+tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.obs <- as.vector(tab)
+chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
 chi_2
 
-chi2_compare <- qchisq(p = 0.95, df = 44)
+chi2_compare <- qchisq(p = 0.95, df = 60)
 chi2_compare
 
-p_value <- pchisq(chi_2, df = 44, lower.tail = FALSE)
+p_value <- pchisq(chi_2, df = 60, lower.tail = FALSE)
 p_value
 ```
 
 # Visualization of the Residual
 ```{r}
-Residuals <- (counts.obs - counts.theo) / sqrt(counts.theo)
-plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual")
+Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
+```
+Null Hypothesis: Locations are not distributed uniformly.
+Conclusion: Since p-value of this chi-square test is smaller than 0.05, we fail to reject the null hypothesis. It indicates that deviations as large as ours are not so likely. Hence, we conclude that it appears that uniform is not a reasonable initial model. 
+Residual Conclusion:
+Since the value of the standardized residual is larger than 3, the probability model of a uniform distribution is lack of fit.
+
+
+## Spacings
+# Visulization of palindrome spacings distribution
+Using graphical methods to compare a generated Exponential sequence and the distribution of the palindromes counts in different sets of location intervals.
+Remark:
+The pink histogram and the red density curve represents the distribution and density for actual data.
+The light blue histogram and the blue density curve represents distribution for generated Exponential sequence.
+The purple histogram represents the overlapped area.
+```{r}
+pop1 = sort(pop, decreasing = FALSE)
+pop.shifted <- pop1[-1]
+pop.original <- pop1[-length(pop)]
+distance <- abs(pop.shifted-pop.original)
 ```
 
-Testing for spacings
 ```{r}
-# Need to be revised
-k <- 45
-spacings.theo <- N/k
-spacings.obs <- distance
-chi_2 <- sum((spacings.obs - spacings.theo)^2/spacings.theo)
+hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Consecutive Pairs Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.001))
+lines(density(distance, adjust = 2), col = rgb(1,0,0,0.5))
+Expo <- rexp(n-1, rate = 1/mean(distance))
+hist(Expo, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Expo, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 4200, y = 0.0009, legend = c("Sample", "Exponential"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
+```
+
+# Chi-square Goodness of Fit Test (Need to be revised)
+We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in an Exponential distibution is the 1/ x bar, which is the reciprocal of the average sample rate. This estimator is unbiased.
+```{r}
+chisq.test(distance,Expo)
+```
+
+# Visualization of the Residual (Need to be revised)
+```{r}
+Residuals <- (intervals.observed-intervals.expected) / sqrt(intervals.expected)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual for Counts")
+```
+
+# Sum of consecutive pairs, triplets, etc, spacings (Need to be revised)
+```{r}
+location.sorted <- sort(location$location, decreasing = FALSE)
+location.sorted[-1]-location.sorted[-length(location.sorted)]
+```
+
+
+
+## Counts
+# Visulization of palindrome counts distribution
+Group the data by dividing the interval [0,N] into 61 sub-intervals and count how many data points are inside each of them.
+Using graphical methods to compare a generated Poisson sequence and the distribution of the palindromes counts in different sets of location intervals.
+Remark:
+The pink histogram and the red density curve represents the distribution and density for actual data.
+The light blue histogram and the blue density curve represents distribution for generated Poisson sequence.
+The purple histogram represents the overlapped area.
+```{r}
+k <- 61
+tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+counts <- as.vector(tab)
+counts
+
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (61 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.3))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda = mean(counts))
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 13, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+
+
+# Additional testings on using different lengths of sub-intervals:
+```{r}
+j <- 1000
+tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
+tab
+counts <- as.vector(tab)
+counts
+hist(counts, breaks = 10, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (1000 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,1))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda = mean(counts))
+hist(Pois, breaks = 10, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 32, y = 0.17, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+
+```{r}
+j <- 45
+tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
+counts <- as.vector(tab)
+counts
+hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (45 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda = mean(counts))
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 20, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+
+```{r}
+j <- 27
+tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
+tab
+counts <- as.vector(tab)
+counts
+hist(counts, breaks = 10, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (27 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda = mean(counts))
+hist(Pois, breaks = 10, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 18, y = 0.17, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+```
+
+# Chi-square Goodness of Fit Test
+We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in a Poisson distibution is the x bar, which is the average sample rate. This estimator is unbiased. Since we estimated one parameter, the degree of freedom equals k-1-1 = 59.
+```{r}
+# Divide the CMV DNA into 61 non overlapping regions of length 3583 bases
+k <- 61
+tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+counts.obs <- as.vector(tab)
+a <- table(cut(counts.obs, breaks = seq(min(counts.obs), max(counts.obs), length.out = k+1), include.lowest = TRUE))
+
+# Construct palindrome count number
+palindrome.count <- c("0,1,2", "3","4","5","6","7","8+")
+
+# Construct observed number of intervals
+intervals.observed <- c(8, 9, 13, 10, 8, 8, 5) 
+
+# Construct expected number of intervals
+expected <- c()
+lambda <- n/k
+for (i in c(0:17)){
+  expect <- k* exp(-lambda)* lambda**i /factorial(i)
+  expected <- c(expected, expect)
+}
+sum <- 0
+for (j in c(9:17)){
+  sum <- sum+expected[j]
+}
+intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
+
+# Create contingency table
+b <- data.frame(palindrome_count,intervals.observed,intervals.expected)
+b
+
+chi_2 <- sum((intervals.observed - intervals.expected)^2/intervals.expected)
 chi_2
 
-chi2_compare <- qchisq(p = 0.95, df = 44)
+chi2_compare <- qchisq(p = 0.95, df = 59)
 chi2_compare
 
-p_value <- pchisq(chi_2, df = 44, lower.tail = FALSE)
+p_value <- pchisq(chi_2, df = 59, lower.tail = FALSE)
 p_value
+
 ```
+
+# Visualization of the Residual
+```{r}
+Residuals <- (intervals.observed-intervals.expected) / sqrt(intervals.expected)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual for Counts")
+```
+Null Hypothesis: Counts are not distributed according to Poisson distribution.
+Conclusion: Since p-value of this chi-square test is 1, we will reject the null hypothesis. From this computation, we see that deviations as large as ours are very much likely to be observed. Hence, we conclude that it appears that Poisson is a reasonable initial model. 
+
 
 # Design Test Statistic Testing for the Maximum Cluster
 ```{r}
