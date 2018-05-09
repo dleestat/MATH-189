@@ -123,4 +123,3 @@ t.test(sample1, sample3, paired = FALSE, var.equal = FALSE)
 At level $\alpha = 0.05$, we can conclude that *sample1* and *sample2* have different means, while *sample1* and *sample3* have the same mean.
 
 * So what if the Normality assumption is not valid. Well, when sample size is large enough, by the central limit theorem, the two sample t-test is still a decent way to achieve our goal. In another word, when the sample size is moderate or large, the two sample t-test is robust to non-Normality.
-
