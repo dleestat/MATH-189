@@ -32,49 +32,52 @@ samples = list(sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)), sort(
 
 
 # Dot plot of locations of palindromes in original data and uniform scatter.
-title <- 'Locations of Palindromes'
+title1 <- 'Locations of Palindromes'
+title2 <- c(title1,'(Simulated)')
 x.axis <- 'Base Pair'
 symbol <- 3
-stripchart(locations, pch=symbol, col=color, main=title, xlab=x.axis)
+stripchart(locations, pch=symbol, col=color, main=title1, xlab=x.axis)
 for (sample in samples) {
-  stripchart(sample, pch=symbol, main=title, xlab=x.axis)
+  stripchart(sample, pch=symbol, main=title2, xlab=x.axis)
 }
 
 # Additional dot plot of locations of palindromes in original data and uniform scatter.
-dotchart(locations, color=color, main=title, xlab=x.axis)
+dotchart(locations, color=color, main=title1, xlab=x.axis)
 for (sample in samples) {
-  dotchart(sample, main=title, xlab=x.axis)
+  dotchart(sample, main=title2, xlab=x.axis)
 }
 
 # Histogram of locations of palindromes in original data and uniform scatter.
 bins <- 35
-hist(locations, col=color, breaks=bins, main=title, xlab=x.axis)
+hist(locations, col=color, breaks=bins, main=title1, xlab=x.axis)
 for (sample in samples) {
-  hist(sample, breaks=breaks, main=title, xlab=x.axis)
+  hist(sample, breaks=breaks, main=title2, xlab=x.axis)
 }
 
 
 
 # Scatterplot of spacing between consecutive palindromes
-title <- 'Spacing between Consecutive Palindromes'
+title1 <- 'Spacing between Consecutive Palindromes'
+title2 <- c(title1,'(Simulated)')
 x.axis <- 'Base Pair Location'
 y.axis <- 'Distance (Base Pairs) from Previous Palindrome'
 y.range <- c(0,5000)
-plot(locations[-1], diff(locations), col=color, ylim=y.range, main=title, xlab=x.axis, ylab=y.axis)
+plot(locations[-1], diff(locations), col=color, ylim=y.range, main=title1, xlab=x.axis, ylab=y.axis)
 for (sample in samples) {
-  plot(sample[-1], diff(sample), ylim=y.range, main=title, xlab=x.axis, ylab=y.axis)
+  plot(sample[-1], diff(sample), ylim=y.range, main=title2, xlab=x.axis, ylab=y.axis)
 }
 
 
 
 # Histogram of counts of palindromes in non-overlapping regions in original data and uniform scatter.
 interval.length <- 2500
-title <- paste('Number of Palindromes in Non-Overlapping Regions of Length', interval.length)
+title1 <- paste('Number of Palindromes in Non-Overlapping Regions of Length', interval.length)
+title2 <- c(title1,'(Simulated)')
 x.axis <- 'Number of Palindromes'
 bins <- seq(0,20,1)
-hist(as.vector(table(cut(locations, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, col=color, main=title, xlab=x.axis)
+hist(as.vector(table(cut(locations, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, col=color, main=title1, xlab=x.axis)
 for (sample in samples) {
-  hist(as.vector(table(cut(sample, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, main=title, xlab=x.axis)
+  hist(as.vector(table(cut(sample, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, main=title2, xlab=x.axis)
 }
 ```
 
