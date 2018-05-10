@@ -1,0 +1,140 @@
+---
+title: "Math 189/289 Lab 6"
+author: "Jiaqi Guo"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+# Simulated Data
+For the lab today, we will use a simulated data set, similar to the CMV data set used for the homework. To begin, we create a genome sequence of length 200,000, with 300 palindrome sites.
+```{r}
+N <- 200000
+n <- 300
+set.seed(318)
+gene <- seq(1, N)
+site.random <- sample.int(N, size=n)
+```
+To visualize our simulated data graphically, we can do the following. Notice that the the way we selected our sites uniformly among 200,000 genome locations in the example. This can be verified with the graph, as the points are scattered uniformly across the number line.
+```{r}
+library(lattice)
+stripplot(site.random, pch=16, cex=0.25)
+```
+
+Now we will create another example, which selects the locations according to some predetermined distribution. In this case, we sample according to normal distribution. 
+To sample according to a specified distribution, we can provide the *prob* in the *sample* function. However, we do need to specify a vector of probability weights.
+```{r}
+set.seed(214)
+norm.quant <- seq(-3, 3, length.out=N)
+site.norm <- sample.int(N, size=n, prob=dnorm(norm.quant))
+```
+We expect to see more points to concentrate around the middle of the 200,000 locations, which is the case if we examine the graph. In this scenario, palindromes tend to center among the possible gene locations.
+```{r}
+library(lattice)
+stripplot(site.norm, pch=16, cex=0.25)
+```
+
+The third example that we are going to look at is we randomly pick 30 locations out of the 200,000. For the 30 locations selected, we will assign them double the likelihood of being selected for the 300 palindrome sites as for the rest 199,970.
+```{r}
+set.seed(215)
+gene.double <- sample.int(N, size=30)
+gene.weight <- rep(0.5, N)
+gene.weight[gene.double] <- gene.weight[gene.double] + 0.5
+set.seed(215)
+site.double <- sample.int(N, size=n, prob=gene.weight)
+```
+Let's see how this turns out to be graphically. As one can see, just by comparing the two graphs, *site.double* hardly has much difference from *site.random*. However, as we know the underlying truth, the two are not the same. Let's see if we can distinguish the two as we move on to more rigorous analysis.
+```{r}
+library(lattice)
+stripplot(site.double, pch=16, cex=0.25)
+```
+
+# Non-overlapping Interval Counts
+We will be working with these three simulated data set as our examples today. One has site locations uniformly randomly generated, the second one has site locations generated according to normal distribution, and the third one is close to uniformly randomly selected, but not exactly.
+The next step is probably to split the region into non-overlapping regions of equal length and examine the counts. The information can be easily obtained using the *cut* function.
+Below is a custom function in R. By this point, you probably have used many functions in R already. It is not too hard to write one.
+```{r}
+regionsplit <- function(n.region, gene, site){
+  count.int <- table(cut(site, breaks = seq(1, length(gene), length.out=n.region+1), include.lowest=TRUE))
+  count.vector <- as.vector(count.int)
+  count.tab <- table(count.vector)
+  return (count.tab)
+}
+```
+Let's take a look at the counts using different number of regions. As one can see, the one with normally generated sites is easy to pick out even with smaller number of regions. However, it is still difficult to distinguish between the other two.
+```{r}
+n.region <- 50
+regionsplit(n.region, gene, site.random)
+regionsplit(n.region, gene, site.norm)
+regionsplit(n.region, gene, site.double)
+```
+
+# $\chi^2$ Test
+We are now ready to perform more rigorous testing procedures to detect which one is a random scatter and which one is not. Let's expand our function, so that it will be capable of returning the table necessary for $\chi^2$ test as described in the slides.
+```{r}
+chisqtable <- function(n.region, site, N){
+  n <- length(site)
+  # lambda estimate
+  lambda.est <- n/n.region
+  # cut into n.region number of non-overlapping intervals
+  count.int <- table(cut(site, breaks = seq(1, length(gene), length.out=n.region+1), include.lowest=TRUE))
+  # get the count levels range
+  count.vector <- as.vector(count.int)
+  count.range <- max(count.vector) - min(count.vector) + 1
+  
+  # create contingency table
+  table <- matrix(rep(NA, count.range*3), count.range, 3)
+  for (i in 1:count.range){
+    offset <- min(count.vector) - 1
+    # first column = count level
+    table[i, 1] <- i + offset
+    # second column = observed count
+    table[i, 2] <- sum(count.vector == i + offset)
+    # third column = expected count
+    if ((i + offset == min(count.vector)) && (min(count.vector) != 0))
+      table[i, 3] <- ppois(i+offset, lambda.est)*n.region
+    else if (i + offset == max(count.vector))
+      table[i, 3] <- 1 - ppois(i + offset - 1, lambda.est)
+    else
+      table[i, 3] <- (ppois(i+offset, lambda.est) - ppois(i + offset - 1, lambda.est))*n.region
+  }
+  
+  return (table)
+}
+```
+
+Let's take a look at the three output tables.
+```{r}
+site.random.tabtemp <- chisqtable(n.region, site.random, N)
+site.norm.tabtemp <- chisqtable(n.region, site.norm, N)
+site.double.tabtemp <- chisqtable(n.region, site.double, N)
+```
+After examining the tables, we notice there are counts that can be grouped together, especially for the normally generated site locations, as many of the observed and expected number of occurrence are small. The following is the $chi^2$ testing of the uniformly randomly selected gene locations.
+```{r}
+site.random.tab <- matrix(rep(NA, 7*2), 7, 2)
+site.random.tab[1,] <- colSums(site.random.tabtemp[1:2, 2:3])
+site.random.tab[2:6,] <- site.random.tabtemp[3:7, 2:3]
+site.random.tab[7,] <- colSums(site.random.tabtemp[8:10, 2:3])
+site.random.stats <- sum((site.random.tab[,2] - site.random.tab[,1])^2/site.random.tab[,2])
+pchisq(site.random.stats, 7 - 2, lower.tail=FALSE)
+```
+For the sites selected according to normally distribution, there are more count categories to be agglomerated.
+```{r}
+site.norm.tab <- matrix(rep(NA, 7*2), 7, 2)
+site.norm.tab[1,] <- colSums(site.norm.tabtemp[1:4, 2:3])
+site.norm.tab[2:6,] <- site.norm.tabtemp[5:9, 2:3]
+site.norm.tab[7,] <- colSums(site.norm.tabtemp[10:19, 2:3])
+site.norm.stats <- sum((site.norm.tab[,2] - site.norm.tab[,1])^2/site.norm.tab[,2])
+pchisq(site.norm.stats, 7 - 2, lower.tail=FALSE)
+```
+Lastly, for the ones selected with double the likelihood in 30 locations. We have the following result.
+```{r}
+site.double.tab <- matrix(rep(NA, 7*2), 7, 2)
+site.double.tab[1,] <- colSums(site.double.tabtemp[1:4, 2:3])
+site.double.tab[2:6,] <- site.double.tabtemp[5:9, 2:3]
+site.double.tab[7,] <- colSums(site.double.tabtemp[10:11, 2:3])
+site.double.stats <- sum((site.double.tab[,2] - site.double.tab[,1])^2/site.double.tab[,2])
+pchisq(site.double.stats, 7 - 2, lower.tail=FALSE)
+```
+
+Keep in mind that the null hypothesis of the testing procedures above assumes the site locations are formed by a random scatter. Thus, the conclusions show that with a significance level of 0.05, we are able to reject the null for the cases of normally distributed site locations and of twice the likelihood in 30 locations. 

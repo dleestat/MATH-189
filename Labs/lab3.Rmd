@@ -1,0 +1,162 @@
+---
+title: "Math 189/289 Lab 3"
+author: "Alex Hanbo Li"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+# Central Limit Theorem
+The message of the central limit theorem is that if the sample size is large, then the probability distribution of the sample average is often well approximated by the normal curve (please see page 37 of the slides).
+
+The formal statement is as the following. If $X_1, \cdots, X_n$ are independent, identically distributed with mean $\mu$ and variance $\sigma^2$, then for large $n$, the probability distribution of 
+$$ Z = \frac{\bar X - \mu}{\sigma/\sqrt{n}} $$
+is approximately $\mathcal{N}(0, 1)$.
+
+We will do some experiments to verify if this is true. Let $X_i \sim exp(1)$. The pdf of exponential distribution is $f(x) = \lambda \exp(-\lambda x)$, for $x \geq 0$. It is known that exponential distribution with parameter $\lambda = 1$ has mean $\mu = 1$ and variance $\sigma^2 = 1$. 
+
+In order to verify the central limit theorem (CLT), we generate a sample of i.i.d. $\{X_i\}_{i=1}^n$, and calculate its mean. We repeat this procedure for $1000$ times for three different choices of $n \in \{10, 100, 1000\}$. We plot the histogram and the normal curve according to the CLT. Note that what we are doing here is also referred to as Monte Carlo simulations. In our case, we generate a random sample for many times in order to empirically observe the distribution of the mean.
+
+```{r}
+clt <- function(n){
+  mean.obs <- rep(NA, 1000)
+  for (i in 1:1000){
+    mean.obs[i] <- mean(rexp(n))
+  }
+  return(mean.obs)
+}
+
+mean.10 <- clt(10)
+mean.100 <- clt(100)
+mean.1000 <- clt(1000)
+
+x <- seq(0, 3, 0.01)
+hist(mean.10, probability=TRUE)
+curve(dnorm(x, mean=1, sd=1/sqrt(10)), add=TRUE, col='darkblue', lwd=2)
+hist(mean.100, probability=TRUE)
+curve(dnorm(x, mean=1, sd=1/sqrt(100)), add=TRUE, col='darkblue', lwd=2)
+hist(mean.1000, probability=TRUE)
+curve(dnorm(x, mean=1, sd=1/sqrt(1000)), add=TRUE, col='darkblue', lwd=2)
+?curve
+```
+
+Furthermore, we demonstrate how the variance of the sample mean estimator changes with sample size. We increment the sample size from $10$ to $1000$ with step size of $10$, and repeat the experiment procedure for $1000$ times as before for each choice of sample size. We examine the standard deviations of the sample mean estimators.
+
+```{r}
+n.seq <- seq(10, 1000, 10)
+mean.std <- rep(NA, length(n.seq))
+for (i in 1:length(n.seq)){
+  mean.std[i] <- sd(clt(n.seq[i]))
+}
+plot(n.seq, mean.std, type='l', lwd = 2)
+lines(n.seq, 1.0/sqrt(n.seq), col = 'red')
+```
+
+# Confidence Interval
+We are going to work with some simulated data. We generate $N$ numbers from bernoulli distribution with success rate 0.3, and take them as our population.
+```{r}
+N <- 1000
+data.population <- rbinom(n=N, size=1, prob=0.3)
+```
+
+One can give a story line to this data. If put in the same context as the video games dataset that we have for homework, for example, this could be the response of the students in the whole school whether they played games in the past week or not. Thus, the school has 1000 students in total. 1 indicates the student played, and 0 indicates did not play.
+
+Then in that sense, we might not have observed every one of these responses as in for the survey data in the video games dataset. Thus, we sample, say $n$, observations from the population, and take them as our sample units.
+
+```{r}
+n <- 300
+ind.sample <- sample.int(n=N, size=n)
+data.sample <- data.population[ind.sample]
+# data.sample <- sample(data.population, size=n)
+```
+
+## Sample Statistics
+Now we will stick with the story line. Once we have the sample data, we can compute a point estimate, as well as an interval estimate for the fraction of the students who played games in the past week or not.
+
+A point estimate in this case is just the mean of the sample,
+```{r}
+mean.sample <- mean(data.sample)
+mean.sample
+```
+
+## A Simple Confidence Interval
+As the first example of a confidence interval in the slides, an unrefined 95% confidence interval can be 
+$$\left(\bar x - 2 \frac{s}{\sqrt{n}}, \bar x + 2 \frac{s}{\sqrt{n}} \right),$$
+where $s$ is the sample standard deviation. Note that this simple confidence interval ignores the finite sample population correction factor.
+
+```{r}
+width <- 2*sd(data.sample)/sqrt(n)
+int.simple <- c(mean.sample - width, mean.sample + width)
+int.simple
+```
+
+## Finite Sample Population Correction
+To get an interval estimate for the fraction, we follow the derivation in the lecture slides, the interval estimate is then given by,
+$$ \left(\bar x - 1.96 \sqrt{\frac{\bar x (1 - \bar x)}{n-1} \frac{N - n}{N}}, \bar x + 1.96 \sqrt{\frac{\bar x (1 - \bar x)}{n-1} \frac{N - n}{N}} \right), $$
+where $\bar x$ indicates the sample mean, $N$ indicates the population size, and $n$ indicates the sample size. Thus, an interval estimate is then given as the following.
+
+```{r}
+width <- 1.96 * sqrt(mean.sample*(1-mean.sample)*(N-n)/((n-1)*N))
+int.exact <- c(mean.sample - width, mean.sample + width)
+int.exact
+```
+
+# Sampling and Bootstrap
+## Sampling
+Sampling (with or without replacement) can be done in R using the function `sample()`.
+```{r}
+sample(1:10, size = 10, replace = F)
+sample(1:10, size = 10, replace = T)
+```
+
+## Bootstrap
+Suppose we want to find the point estimate of the proportion of male in the population and its confidence interval. Note that the *sex* variable is 1 if the student is male and 0 if female. Then the point estimation of the proportion of male is:
+```{r}
+data <- read.table("../Case Study 2/videodata.txt", header=TRUE)
+male.percentage <- mean(data$sex)
+male.percentage
+```
+
+Now we also want to have a confidence interval of this estimator. However, clearly the distribution of *sex* variable is not Normal, it is a Bernoulli random variable. We know our data were drawn from a population with size $N = 314$. Hence, we first create a bootstrap population of this size by repeating every sample for $\frac{314}{91} = 3.45$ times. Here, we'll just specify the parameter *length.out* to be 314.
+
+```{r}
+# Method 1 (Creating a population from a sample, then sampling without replacement)
+boot.population <- rep(data$sex, length.out = 314)
+length(boot.population)
+```
+
+Then we will choose $n = 91$ samples from the Bootstrap population and call this a Bootstrap sample.
+
+```{r}
+sample1 <- sample(boot.population, size = 91, replace = FALSE)
+```
+
+Continue this procedure until we have 400 Bootstrap samples.
+```{r}
+set.seed(189289)
+B = 400 # the number of bootstrap samples we want
+boot.sample <- array(dim = c(B, 91))
+for (i in 1:B) {
+  boot.sample[i, ] <- sample(boot.population, size = 91, replace = FALSE)
+}
+```
+
+Then we can calculate the sample mean for each Bootstrap sample (i.e. each row of the Bootstrap sample matrix).
+```{r}
+boot.mean <- apply(X = boot.sample, MARGIN = 1, FUN = mean)
+head(boot.mean)
+```
+
+Let's see the histogram of these Bootstrap sample means.
+```{r}
+hist(boot.mean, breaks = 20, probability = TRUE, density = 20, col = 3, border = 3)
+lines(density(boot.mean, adjust = 2), col = 2)
+```
+
+## Bootstrap Confidence Interval
+The third and last type of confidence interval we introduce is done with the help of bootstrap. Recall that previously, we have $B=400$ bootstrap sample means. We can build a bootstrap confidence interval by extracting the 0.025-quantile and 0.975 quantile of the bootstrap sample means and arrive at an interval estimate.
+
+```{r}
+int.boot <- c(quantile(boot.mean, 0.025), quantile(boot.mean, 0.975))
+int.boot
+```

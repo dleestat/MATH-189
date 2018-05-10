@@ -1,0 +1,16 @@
+---
+title: "CASE STUDY 3: SEARCH FOR THE UNUSUAL CLUSTER IN THE PALINDROMES"
+output: html_notebook
+---
+
+# Setup
+```{r}
+locations <- read.table('hcmv-25kgjn1-1rfrtkc.txt', header=TRUE)$location
+data <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
+
+paste('Number of palindromes:', length(locations))
+summary(locations)
+boxplot(locations)
+dotchart(locations)
+hist(locations, breaks=20, main='Locations of Palindromes', xlab='Base Pair')
+```

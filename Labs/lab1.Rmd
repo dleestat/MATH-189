@@ -1,0 +1,221 @@
+---
+title: "Math 189/289 Lab 1"
+author: "Alex Li"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+
+# Download R and Rstudio
+Download the latest version of Rstudio here: https://www.rstudio.com/products/rstudio/download/
+
+If you don't have R, download it here:
+https://cran.rstudio.com/
+
+# Numerical Vectors
+### Assignment
+Vector is a single entity consisting of an ordered collection of numbers.
+```{r}
+x <- c(1,2,3,4,5) # c == combine
+print(x)
+```
+```{r}
+y <- c(x, 0, x)
+y
+```
+
+### Vector arithmetic
+Vectors can be used in arithmetic expressions, in which case the operations are performed element by element.
+```{r}
+a <- c(1,2,3)
+b <- c(4,5,6)
+a + b
+```
+If the vectors are not of the same length, shorter vectors in the expression are recycled as often as need be (perhaps fractionally) until they match the length of the longest vector.
+```{r}
+d <- c(4,5,6,7,8,9)
+a + d
+```
+In this case, the vector "a" is automatically recycled to be [1 2 3 1 2 3].
+
+### Common functions
+```{r}
+x <- c(1,2,3,4,5,6,6,6)
+max(x) # largest element
+min(x) # smallest element
+sum(x) # the total of the elements in x
+prod(x) # the product
+```
+
+### Generate sequence
+```{r}
+a <- 1:10
+a
+b <- seq(0,5,by=.5)
+b
+```
+By default, *by* is set to be 1.
+```{r}
+c <- seq(1,5)
+c
+```
+You can also specify the length of the vector.
+```{r}
+d <- seq(1,5,length.out = 9)
+d
+length(d)
+```
+Another useful function is `rep`, which replicates an object in various complicated
+ways. You can repeat a single value.
+```{r}
+rep(1, times = 5)
+```
+You can also repeat a vector. By setting the parameter `times`, you will put the vector end-to-end in a new vector. By setting `each`, you will repeat each element of the vector before proceeding to the next one.
+```{r}
+a <- 1:5
+rep(a, each = 3)
+```
+
+# Logical Vectors
+The elements of a logical vector can have the values **TRUE**, **FALSE**, and **NA** (for “not available”, see below).
+```{r}
+x <- 10
+logical <- x > 5
+logical
+```
+You can also test a vector. In this case, the test will be on each element.
+```{r}
+x <- c(1,2,3,4,5)
+x > 3
+```
+The logical operators are `<, <=, >, >=, ==` for exact equality and `!=` for inequality. In addition if c1 and c2 are logical expressions, then `c1 & c2` is their intersection (and), `c1 | c2` is their union (or), and `!c1` is the negation of c1.
+```{r}
+c1 <- c(TRUE, TRUE, FALSE)
+c2 <- c(TRUE, FALSE, FALSE)
+c1 | c2
+c1 & c2
+!c1
+```
+
+# Character Vectors
+We can also store characters in a vector. In the following case, the numerical number `189` is automatically transfered to character.
+```{r}
+char1 <- c("Math", 189, "is", "fun")
+char1
+```
+One very useful function for character vector is `paste`. The `paste()` function takes an arbitrary number of arguments and concatenates them one by one into character strings.
+```{r}
+paste("Math", 189)
+paste0("Math", 189)
+paste(c("Math", "CSE"), c(100, 120))
+paste(c("Math", "CSE"), c(100, 120), sep = "")
+```
+
+# Index of Vectors
+Given a vector, in many cases we want to modify a subset of that vector. Here are some common ways to subset.
+
+### Logical subset
+Choose the elements of `x` that are larger than 3.
+```{r}
+x <- c(1,2,3,4,5)
+y <- x[x > 3]
+y <- x[c(FALSE, FALSE, FALSE, TRUE, TRUE)]
+y
+```
+Choose the elements of `x` that are not NA.
+```{r}
+x <- c(1,2,3,NA,5)
+y <- x[!is.na(x)]
+y
+```
+```{r}
+x <- c(1,2,3,NA,5,6,NA)
+x[!is.na(x) & x>2]
+```
+
+### Positive integer index
+The index in this case must lie in the set ` {1, 2, . . ., length(x)}`. Remember, the index set has to be a number of a vector itself. In the following example, if you directly type `x[1,3,6]`, you will get an error message.
+```{r}
+x <- c(1,2,4,5,7,10,15)
+x[c(1,3,6)]
+```
+The corresponding elements of the vector are selected and concatenated, **in that order**, in the result. 
+```{r}
+x <- c(1,2,4,5,7,10,15)
+x[c(3,3,1,1,1,1,1,2)]
+```
+
+### Negative integer index
+A negative index specifies the values to be excluded rather than included.
+```{r}
+x <- c(1,3,10,189,289)
+x[-(1:3)]
+```
+
+### Character index
+You can subset using character index only when an object has a `names` attribute to identify its components.
+```{r}
+grades <- c(100, 90, 87, 95, 95)
+names(grades) <- c("Jelena", "Alice", "Aaron", "Alex", "Jiaqi")
+lab <- grades[c("Jelena", "Alex", "Jiaqi")]
+lab
+```
+
+# Array and Matrix
+### Array
+The largest difference between **array** and **vector** is **array* object has a `dim` attribute. The `dim` of a vector is `NULL`.
+```{r}
+x <- c(1,2,3,4,5)
+dim(x)
+class(x)
+```
+We can assign a `dim` attribute to make it an 1-by-5 array (matrix).
+```{r}
+dim(x) <- c(1,5)
+class(x)
+x
+```
+
+Now let's create a 4-by-5 matrix.
+```{r}
+x <- 1:20
+dim(x) <- c(4,5)
+x
+```
+
+A more quick way to create the array(matrix) in previous example.
+```{r}
+x <- array(1:20, dim=c(4,5))
+x
+```
+
+### Index of array
+Extract a subarray (submatrix).
+```{r}
+x <- array(1:20, dim=c(4,5))
+x[3,4]
+x[c(1,3,4), c(2,5)]
+```
+
+# Class
+At the end of lab 1, we will talk about class. All objects in R have a class, reported by the function `class`. It can be used to allow for an object-oriented style of programming in R. For example, in the later labs, we will learn different regression methods. Most of them will share the same prediction function `predict`. However, when you pass in different classes, the `predict` function will react to the argument sensitive to its class.
+```{r}
+x <- NA
+class(x)
+x <- c(1,2,3)
+class(x)
+x <- array(1:4, dim=c(2,2))
+class(x)
+```
