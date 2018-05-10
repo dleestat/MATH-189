@@ -19,26 +19,62 @@ To begin, pursue the point of view that structure in the data is indicated by de
 
 *Of course, a random uniform scatter does that mean that palindromes will be equally spaced as milestones on a freeway. There will be some gaps on the DNA where no palindromes occur, and there will be some clumping together of palindromes.*
 
-To look for structure examine the locations of the palindromes, the spacing between palindromes, and the counts of palindromes in non overlapping regions of the DNA. One starting placing might be to see first how random scatter looks by using a computer to simulate it.
+To look for structure examine the locations of the palindromes, the spacing between palindromes, and the counts of palindromes in non overlapping regions of the DNA. One starting place might be to see first how random scatter looks by using a computer to simulate it.
 
-*A computer can simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. When this is done several times, by making seller sets of simualted palindrome locations, then the real data can be compared to the simulated data.*
+*A computer can simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. When this is done several times, by making seller sets of simulated palindrome locations, then the real data can be compared to the simulated data.*
 ```{r}
 set.seed(0)
+color <- 'red'
 
 # Generate 3 samples from the uniform distribution with the same size and bounds as our data.
-samples = list(runif(n, min=0, max=N), runif(n, min=0, max=N), runif(n, min=0, max=N))
+samples = list(sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)))
 
-# Dot plots for original data and uniform scatter.
-dotchart(locations, color='red')
+
+
+# Dot plot of locations of palindromes in original data and uniform scatter.
+title <- 'Locations of Palindromes'
+x.axis <- 'Base Pair'
+symbol <- 3
+stripchart(locations, pch=symbol, col=color, main=title, xlab=x.axis)
 for (sample in samples) {
-  dotchart(sort(sample))
+  stripchart(sample, pch=symbol, main=title, xlab=x.axis)
 }
 
-# Histograms for original data and uniform scatter.
-interval.length = 20
-hist(locations, col='red', breaks=interval.length, main='Locations of Palindromes', xlab='Base Pair')
+# Additional dot plot of locations of palindromes in original data and uniform scatter.
+dotchart(locations, color=color, main=title, xlab=x.axis)
 for (sample in samples) {
-  hist(sample, breaks=interval.length, main='Locations of Palindromes', xlab='Base Pair')
+  dotchart(sample, main=title, xlab=x.axis)
+}
+
+# Histogram of locations of palindromes in original data and uniform scatter.
+bins <- 35
+hist(locations, col=color, breaks=bins, main=title, xlab=x.axis)
+for (sample in samples) {
+  hist(sample, breaks=breaks, main=title, xlab=x.axis)
+}
+
+
+
+# Scatterplot of spacing between consecutive palindromes
+title <- 'Spacing between Consecutive Palindromes'
+x.axis <- 'Base Pair Location'
+y.axis <- 'Distance (Base Pairs) from Previous Palindrome'
+y.range <- c(0,5000)
+plot(locations[-1], diff(locations), col=color, ylim=y.range, main=title, xlab=x.axis, ylab=y.axis)
+for (sample in samples) {
+  plot(sample[-1], diff(sample), ylim=y.range, main=title, xlab=x.axis, ylab=y.axis)
+}
+
+
+
+# Histogram of counts of palindromes in non-overlapping regions in original data and uniform scatter.
+interval.length <- 2500
+title <- paste('Number of Palindromes in Non-Overlapping Regions of Length', interval.length)
+x.axis <- 'Number of Palindromes'
+bins <- seq(0,20,1)
+hist(as.vector(table(cut(locations, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, col=color, main=title, xlab=x.axis)
+for (sample in samples) {
+  hist(as.vector(table(cut(sample, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, main=title, xlab=x.axis)
 }
 ```
 
