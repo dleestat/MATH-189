@@ -5,64 +5,116 @@ output: html_document
 
 Overall Question: How do we find clusters of palindromes? How do we determine whether a cluster is just a chance occurrence or a potential replication site?
 
-## Import Dataset
+# Scenario 1: Random Scatter
+# Import Dataset
 ```{r}
 location <- read.table("hcmv-25kgjn1-1rfrtkc.txt", header = TRUE)
-raw <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
+data <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
 ```
-
-## Random Scatter
 Generate structure that examine the locations of the palindromes. Simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. 
 ```{r}
 set.seed(2017)
 # Generate simple random sample
 N <- 229354
 n <- 296
-theo <- sample.int(N, size = n)
+uniform <- sample.int(N, size = n)
+locations <- location$location
 ```
 
-## Location
-# Visulization of palindrome location distribution vs Uniform distribution
+# Scenario 2: Locations
+## Visulization of palindrome location distribution vs Uniform distribution
 Using graphical methods to examine if the locations follow uniform distribution.
 The pink histogram and the red density curve represents distribution for actual data.
 The light blue histogram and the blue density curve represents the distribution and density for the simulated simple random sample.
 The purple histogram represents the overlapped area.
 ```{r}
-hist(pop, breaks = 20, probability = TRUE, col = rgb(1,0,0,0.5), main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
-lines(density(pop, adjust = 2), col = 2)
-pop <- location$location
-hist(theo,breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
-lines(density(theo, adjust = 2), col = 4)
+hist(locations, breaks = 20, probability = TRUE, col = rgb(1,0,0,0.5), main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
+lines(density(locations, adjust = 2), col = 2)
+hist(uniform, breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
+lines(density(uniform, adjust = 2), col = 4)
 legend(x = 180000, y = 0.000008, legend = c("Sample", "Uniform"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
-# Chi-square Goodness of Fit Test
+
+In Case 1, we group locations into 50 sub-intervals, and construct chi-square test statistic to compare it against the theoretical uniform distribution.
+## Chi-square Goodness of Fit Test
 ```{r}
-k <- 61
+k <- 50
 locations.theo <- n/k
 tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
 locations.obs <- as.vector(tab)
 chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
 chi_2
 
-chi2_compare <- qchisq(p = 0.95, df = 60)
+chi2_compare <- qchisq(p = 0.95, df = 49)
 chi2_compare
 
-p_value <- pchisq(chi_2, df = 60, lower.tail = FALSE)
+p_value <- pchisq(chi_2, df = 49, lower.tail = FALSE)
 p_value
 ```
-
-# Visualization of the Residual
+## Visualization of the Residual
 ```{r}
 Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
 plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
 ```
+
+In case 2, we group locations into 100 sub-intervals, and construct chi-square test statistic to compare it against the theoretical uniform distribution.
+## Chi-square Goodness of Fit Test
+Case 1: Group locations into 100 sub-intervals
+```{r}
+k <- 100
+locations.theo <- n/k
+tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.obs <- as.vector(tab)
+chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = 99)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = 99, lower.tail = FALSE)
+p_value
+```
+## Visualization of the Residual
+```{r}
+Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
+```
+
+In case 3, we group locations into 500 sub-intervals, and construct chi-square test statistic to compare it against the theoretical uniform distribution.
+## Chi-square Goodness of Fit Test
+```{r}
+k <- 500
+locations.theo <- n/k
+tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.obs <- as.vector(tab)
+chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = 499)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = 499, lower.tail = FALSE)
+p_value
+```
+## Visualization of the Residual
+```{r}
+Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
+```
+
+Inference:
 Null Hypothesis: Locations are not distributed uniformly.
 Conclusion: Since p-value of this chi-square test is smaller than 0.05, we fail to reject the null hypothesis. It indicates that deviations as large as ours are not so likely. Hence, we conclude that it appears that uniform is not a reasonable initial model. 
 Residual Conclusion:
 Since the value of the standardized residual is larger than 3, the probability model of a uniform distribution is lack of fit.
 
 
-## Spacings
+
+
+
+
+
+# Scenario 2: Locations
 # Visulization of palindrome spacings distribution
 Using graphical methods to compare a generated Exponential sequence and the distribution of the palindromes counts in different sets of location intervals.
 Remark:
@@ -71,9 +123,7 @@ The light blue histogram and the blue density curve represents distribution for 
 The purple histogram represents the overlapped area.
 ```{r}
 pop1 = sort(pop, decreasing = FALSE)
-pop.shifted <- pop1[-1]
-pop.original <- pop1[-length(pop)]
-distance <- abs(pop.shifted-pop.original)
+distance <- abs(pop[-1]-pop[-length(pop)])
 ```
 
 ```{r}
@@ -89,14 +139,40 @@ legend(x = 4200, y = 0.0009, legend = c("Sample", "Exponential"), lty = c(1,1), 
 # Chi-square Goodness of Fit Test (Need to be revised)
 We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in an Exponential distibution is the 1/ x bar, which is the reciprocal of the average sample rate. This estimator is unbiased.
 ```{r}
-chisq.test(distance,Expo)
+k <- 61
+spacings.obs <- distance
+
+sort(distance, decreasing = FALSE)
 ```
 
-# Visualization of the Residual (Need to be revised)
 ```{r}
-Residuals <- (intervals.observed-intervals.expected) / sqrt(intervals.expected)
-plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual for Counts")
+# Construct palindrome count number
+palindrome.count <- c("1-88.4", "88.4-176","176-263","263-351","351-438","438-525","525-613", "613-700", "700-788", "788-875", "875-963", "963-1050", "1050-1140", "1140-1220")
+
+# Construct observed number of intervals
+intervals.observed <- c(51,28,27,26,13,15,15,10,7,9,7,9,11,13,9,6,11,7,5,5,6,6,9) 
+
+
+# Construct expected number of intervals
+expected <- c()
+lambda <- sum(distance)/(n-1)
+for (i in c(0:17)){
+  expect <- k* exp(-lambda)
+  expected <- c(expected, expect)
+}
+sum <- 0
+for (j in c(9:17)){
+  sum <- sum+expected[j]
+}
+
+intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
+
+
 ```
+
+
+# Visualization of the Residual (Need to be revised)
+
 
 # Sum of consecutive pairs, triplets, etc, spacings (Need to be revised)
 ```{r}
@@ -106,7 +182,7 @@ location.sorted[-1]-location.sorted[-length(location.sorted)]
 
 
 
-## Counts
+# Counts
 # Visulization of palindrome counts distribution
 Group the data by dividing the interval [0,N] into 61 sub-intervals and count how many data points are inside each of them.
 Using graphical methods to compare a generated Poisson sequence and the distribution of the palindromes counts in different sets of location intervals.
@@ -200,16 +276,16 @@ for (j in c(9:17)){
 intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
 
 # Create contingency table
-b <- data.frame(palindrome_count,intervals.observed,intervals.expected)
+b <- data.frame(palindrome.count,intervals.observed,intervals.expected)
 b
 
 chi_2 <- sum((intervals.observed - intervals.expected)^2/intervals.expected)
 chi_2
 
-chi2_compare <- qchisq(p = 0.95, df = 59)
+chi2_compare <- qchisq(p = 0.95, df = 7)
 chi2_compare
 
-p_value <- pchisq(chi_2, df = 59, lower.tail = FALSE)
+p_value <- pchisq(chi_2, df = 7, lower.tail = FALSE)
 p_value
 
 ```
