@@ -28,18 +28,15 @@ The pink histogram and the red density curve represents distribution for actual 
 The light blue histogram and the blue density curve represents the distribution and density for the simulated simple random sample.
 The purple histogram represents the overlapped area.
 ```{r}
-<<<<<<< HEAD
 hist(locations, breaks = 20, probability = TRUE, col = rgb(1,0,0,0.5), main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
 lines(density(locations, adjust = 2), col = 2)
 hist(uniform, breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
 lines(density(uniform, adjust = 2), col = 4)
-=======
 pop <- location$location
 hist(pop, breaks = 20, probability = TRUE, col = rgb(1,0,0,0.5), main = "Location Data Distribution Comparison", xlab= "Palindrome Locations")
 lines(density(pop, adjust = 2), col = 2)
-hist(theo,breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
-lines(density(theo, adjust = 2), col = 4)
->>>>>>> e347a4865a763b363b2b3512094a5426a7b97e69
+hist(uniform,breaks = 20, probability = TRUE, col = rgb(0,0,1,0.5), add = TRUE)
+lines(density(uniform, adjust = 2), col = 4)
 legend(x = 180000, y = 0.000008, legend = c("Sample", "Uniform"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
 
@@ -47,10 +44,10 @@ In Case 1, we group locations into 50 sub-intervals, and construct chi-square te
 ## Chi-square Goodness of Fit Test
 ```{r}
 k <- 50
-locations.theo <- n/k
-tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
-locations.obs <- as.vector(tab)
-chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
+locations.expected <- n/k
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.observed <- as.vector(tab)
+chi_2 <- sum((locations.observed - locations.expected)^2/locations.expected)
 chi_2
 
 chi2_compare <- qchisq(p = 0.95, df = 49)
@@ -61,7 +58,7 @@ p_value
 ```
 ## Visualization of the Residual
 ```{r}
-Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+Residuals <- (locations.observed - locations.expected) / sqrt(locations.expected)
 plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
 ```
 
@@ -70,10 +67,10 @@ In case 2, we group locations into 100 sub-intervals, and construct chi-square t
 Case 1: Group locations into 100 sub-intervals
 ```{r}
 k <- 100
-locations.theo <- n/k
-tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
-locations.obs <- as.vector(tab)
-chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
+locations.expected <- n/k
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.observed <- as.vector(tab)
+chi_2 <- sum((locations.observed - locations.expected)^2/locations.expected)
 chi_2
 
 chi2_compare <- qchisq(p = 0.95, df = 99)
@@ -84,7 +81,7 @@ p_value
 ```
 ## Visualization of the Residual
 ```{r}
-Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+Residuals <- (locations.observed - locations.expected) / sqrt(locations.expected)
 plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
 ```
 
@@ -92,10 +89,10 @@ In case 3, we group locations into 500 sub-intervals, and construct chi-square t
 ## Chi-square Goodness of Fit Test
 ```{r}
 k <- 500
-locations.theo <- n/k
-tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
-locations.obs <- as.vector(tab)
-chi_2 <- sum((locations.obs - locations.theo)^2/locations.theo)
+locations.expected <- n/k
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+locations.observed <- as.vector(tab)
+chi_2 <- sum((locations.observed - locations.expected)^2/locations.expected)
 chi_2
 
 chi2_compare <- qchisq(p = 0.95, df = 499)
@@ -106,7 +103,7 @@ p_value
 ```
 ## Visualization of the Residual
 ```{r}
-Residuals <- (locations.obs - locations.theo) / sqrt(locations.theo)
+Residuals <- (locations.observed - locations.expected) / sqrt(locations.expected)
 plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome locations", main = "Plot of Standardized Residual for Locations")
 ```
 
@@ -122,7 +119,7 @@ Since the value of the standardized residual is larger than 3, the probability m
 
 
 
-# Scenario 2: Locations
+# Scenario 2: Spacings
 # Visulization of palindrome spacings distribution
 Using graphical methods to compare a generated Exponential sequence and the distribution of the palindromes counts in different sets of location intervals.
 Remark:
@@ -130,14 +127,15 @@ The pink histogram and the red density curve represents the distribution and den
 The light blue histogram and the blue density curve represents distribution for generated Exponential sequence.
 The purple histogram represents the overlapped area.
 ```{r}
-pop1 = sort(pop, decreasing = FALSE)
-distance <- abs(pop[-1]-pop[-length(pop)])
+pop.sorted = sort(pop, decreasing = FALSE)
+distance.pair <- abs(pop.sorted[-1]-pop.sorted[-length(pop)])
+distance.pair
 ```
 
 ```{r}
-hist(distance, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Consecutive Pairs Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.001))
-lines(density(distance, adjust = 2), col = rgb(1,0,0,0.5))
-Expo <- rexp(n-1, rate = 1/mean(distance))
+hist(distance.pair, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Consecutive Pairs Spacings Distribution Comparison", xlab = "Distance between Consecutive Palindromes Locations", ylim = c(0,0.001))
+lines(density(distance.pair, adjust = 2), col = rgb(1,0,0,0.5))
+Expo <- rexp(n-1, rate = 1/mean(distance.pair))
 hist(Expo, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Expo, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 4200, y = 0.0009, legend = c("Sample", "Exponential"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
@@ -148,23 +146,20 @@ legend(x = 4200, y = 0.0009, legend = c("Sample", "Exponential"), lty = c(1,1), 
 We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in an Exponential distibution is the 1/ x bar, which is the reciprocal of the average sample rate. This estimator is unbiased.
 ```{r}
 k <- 61
-spacings.obs <- distance
-
-sort(distance, decreasing = FALSE)
+spacings.obs <- distance.pair
+sort(distance.pair, decreasing = FALSE)
 ```
 
 ```{r}
-<<<<<<< HEAD
 # Construct palindrome count number
 palindrome.count <- c("1-88.4", "88.4-176","176-263","263-351","351-438","438-525","525-613", "613-700", "700-788", "788-875", "875-963", "963-1050", "1050-1140", "1140-1220")
 
 # Construct observed number of intervals
 intervals.observed <- c(51,28,27,26,13,15,15,10,7,9,7,9,11,13,9,6,11,7,5,5,6,6,9) 
 
-
 # Construct expected number of intervals
 expected <- c()
-lambda <- sum(distance)/(n-1)
+lambda <- sum(distance.pair)/(n-1)
 for (i in c(0:17)){
   expect <- k* exp(-lambda)
   expected <- c(expected, expect)
@@ -176,19 +171,9 @@ for (j in c(9:17)){
 
 intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
 
-
-=======
-# Residuals <- (intervals.observed-intervals.expected) / sqrt(intervals.expected)
-# plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual for Counts")
->>>>>>> e347a4865a763b363b2b3512094a5426a7b97e69
-```
-
-
 # Visualization of the Residual (Need to be revised)
 
-
 # Sum of consecutive pairs, triplets, etc, spacings (Need to be revised)
-```{r}
 location.sorted <- sort(location$location, decreasing = FALSE)
 location.sorted[-1]-location.sorted[-length(location.sorted)]
 ```
@@ -205,7 +190,7 @@ The light blue histogram and the blue density curve represents distribution for 
 The purple histogram represents the overlapped area.
 ```{r}
 k <- 61
-tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
 counts <- as.vector(tab)
 counts
 
@@ -221,10 +206,8 @@ legend(x = 13, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(
 # Additional testings on using different lengths of sub-intervals:
 ```{r}
 j <- 1000
-tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
-tab
+tab <- table(cut(locations, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
 counts <- as.vector(tab)
-counts
 hist(counts, breaks = 10, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (1000 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,1))
 lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
 Pois <- rpois(n, lambda = mean(counts))
@@ -235,7 +218,7 @@ legend(x = 32, y = 0.17, legend = c("sample", "Poisson"), lty = c(1,1), col = c(
 
 ```{r}
 j <- 45
-tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
+tab <- table(cut(locations, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
 counts <- as.vector(tab)
 counts
 hist(counts, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (45 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
@@ -248,7 +231,7 @@ legend(x = 20, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(
 
 ```{r}
 j <- 27
-tab <- table(cut(pop, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
+tab <- table(cut(locations, breaks = seq(0, N, length.out = j+1), include.lowest = TRUE))
 tab
 counts <- as.vector(tab)
 counts
@@ -265,7 +248,7 @@ We computed that by Maximum likelihood and Method of Moments, the estimator for 
 ```{r}
 # Divide the CMV DNA into 61 non overlapping regions of length 3583 bases
 k <- 61
-tab <- table(cut(pop, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
 counts.obs <- as.vector(tab)
 a <- table(cut(counts.obs, breaks = seq(min(counts.obs), max(counts.obs), length.out = k+1), include.lowest = TRUE))
 
