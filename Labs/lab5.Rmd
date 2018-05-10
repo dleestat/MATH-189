@@ -1,5 +1,5 @@
 ---
-title: "Math 189/289 Lab 3"
+title: "Math 189/289 Lab 5"
 author: "Alex Hanbo Li"
 output: html_notebook
 ---
