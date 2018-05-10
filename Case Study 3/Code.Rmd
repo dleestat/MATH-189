@@ -2,15 +2,43 @@
 title: "CASE STUDY 3: SEARCH FOR THE UNUSUAL CLUSTER IN THE PALINDROMES"
 output: html_notebook
 ---
+## Question
+How do we find clusters of palindromes? How do we determine whether a cluster is just a chance occurrence or a potential replication site?
 
-# Setup
+## Setup
 ```{r}
-locations <- read.table('hcmv-25kgjn1-1rfrtkc.txt', header=TRUE)$location
-data <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
+locations <- read.table('hcmv-25kgjn1-1rfrtkc.txt', header=TRUE)$location  # Original
+health <- read.csv('RAW_DATA-2iwcznn-2kr2xw0.csv', header = TRUE)  # Additional
 
-paste('Number of palindromes:', length(locations))
-summary(locations)
-boxplot(locations)
-dotchart(locations)
-hist(locations, breaks=20, main='Locations of Palindromes', xlab='Base Pair')
+N <- 229354  # Base pairs
+n <- 296  # Palindromes
 ```
+
+## Scenario 1: Random Scatter
+To begin, pursue the point of view that structure in the data is indicated by departures from a uniform scatter of palindromes across the DNA.
+
+*Of course, a random uniform scatter does that mean that palindromes will be equally spaced as milestones on a freeway. There will be some gaps on the DNA where no palindromes occur, and there will be some clumping together of palindromes.*
+
+To look for structure examine the locations of the palindromes, the spacing between palindromes, and the counts of palindromes in non overlapping regions of the DNA. One starting placing might be to see first how random scatter looks by using a computer to simulate it.
+
+*A computer can simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. When this is done several times, by making seller sets of simualted palindrome locations, then the real data can be compared to the simulated data.*
+```{r}
+set.seed(0)
+
+# Generate 3 samples from the uniform distribution with the same size and bounds as our data.
+samples = list(runif(n, min=0, max=N), runif(n, min=0, max=N), runif(n, min=0, max=N))
+
+# Dot plots for original data and uniform scatter.
+dotchart(locations, color='red')
+for (sample in samples) {
+  dotchart(sort(sample))
+}
+
+# Histograms for original data and uniform scatter.
+interval.length = 20
+hist(locations, col='red', breaks=interval.length, main='Locations of Palindromes', xlab='Base Pair')
+for (sample in samples) {
+  hist(sample, breaks=interval.length, main='Locations of Palindromes', xlab='Base Pair')
+}
+```
+
