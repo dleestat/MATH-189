@@ -154,7 +154,7 @@ spacings.observed <- distance.pair
 # Construct expected number of intervals
 spacings.expected <- c()
 lambda <- (n-1)/sum(distance.pair)
-spacings.expected <- rep((n-1)*exp(-lambda*400),n-1)
+spacings.expected <- rep((n-1)*exp(-lambda),n-1)
 
 chi_2 <- sum((spacings.observed - spacings.expected)^2/spacings.expected)
 chi_2
