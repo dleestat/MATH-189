@@ -4,10 +4,8 @@ output: html_notebook
 ---
 
 
-
 ## Question
 In this paper, we will search for unusual clusters of complementary palindromes. The overarching research question is: “How do we find clusters of palindromes? How do we determine whether a cluster is just a chance occurrence or a potential replication site? Based on our analysis, we will then provide recommendations to biologists who are about to start experimentally searching for the origin of replication.
-
 
 
 ## Setup
@@ -18,7 +16,6 @@ health <- read.csv('RAW_DATA-2iwcznn-2kr2xw0.csv', header = TRUE)  # Additional
 N <- 229354  # Base pairs
 n <- 296  # Palindromes
 ```
-
 
 
 ## Scenario 1: Random Scatter
@@ -89,13 +86,11 @@ for (sample in samples) {
 ```
 
 
-
 ## Scenario 2: Locations and Spacings
 Use graphical methods to examine the spacings between consecutive palindromes and sum of consecutive pairs, triplets, etc, spacings. Compare what you find to what you would expect to find in a random scatter. Also, use graphical methods to compare locations of the palindromes.
 ```{r}
-#I don't know what I am doing
-```
 
+```
 
 
 ## Scenario 3: Counts
@@ -105,13 +100,11 @@ Use graphical methods and more formal statistical tests to examine the counts of
 ```
 
 
-
 ## Scenario 4: The Biggest Cluster
 Does the interval with the greatest number of palindromes indicate a potential origin of replication? Be careful in making your intervals, for any small, but significant deviations from random scatter, such as a tight cluster of a few palindromes, could easily go undetected if the regions examined are too large. Also, if the regions are too small, a cluster of palindromes may be split between adjacent interavls and not appear as a high-count interval.
 ```{r}
 
 ```
-
 
 
 ## Additional Scenario: TODO Title
