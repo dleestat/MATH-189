@@ -93,7 +93,7 @@ for (sample in samples) {
 ## Scenario 2: Locations and Spacings
 Use graphical methods to examine the spacings between consecutive palindromes and sum of consecutive pairs, triplets, etc, spacings. Compare what you find to what you would expect to find in a random scatter. Also, use graphical methods to compare locations of the palindromes.
 ```{r}
-
+#I don't know what I am doing
 ```
 
 
