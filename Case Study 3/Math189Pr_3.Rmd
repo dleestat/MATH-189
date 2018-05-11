@@ -56,6 +56,8 @@ chi2_compare
 p_value <- pchisq(chi_2, df = 49, lower.tail = FALSE)
 p_value
 ```
+
+
 ## Visualization of the Residual
 ```{r}
 Residuals <- (locations.observed - locations.expected) / sqrt(locations.expected)
@@ -64,7 +66,6 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 
 In case 2, we group locations into 100 sub-intervals, and construct chi-square test statistic to compare it against the theoretical uniform distribution.
 ## Chi-square Goodness of Fit Test
-Case 1: Group locations into 100 sub-intervals
 ```{r}
 k <- 100
 locations.expected <- n/k
@@ -127,8 +128,8 @@ The pink histogram and the red density curve represents the distribution and den
 The light blue histogram and the blue density curve represents distribution for generated Exponential sequence.
 The purple histogram represents the overlapped area.
 ```{r}
-pop.sorted = sort(pop, decreasing = FALSE)
-distance.pair <- abs(pop.sorted[-1]-pop.sorted[-length(pop)])
+locations.sorted = sort(locations, decreasing = FALSE)
+distance.pair <- abs(locations.sorted[-1]-locations.sorted[-length(locations)])
 distance.pair
 ```
 
@@ -144,38 +145,28 @@ legend(x = 4200, y = 0.0009, legend = c("Sample", "Exponential"), lty = c(1,1), 
 
 # Chi-square Goodness of Fit Test (Need to be revised)
 We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in an Exponential distibution is the 1/ x bar, which is the reciprocal of the average sample rate. This estimator is unbiased.
-```{r}
-k <- 61
-spacings.obs <- distance.pair
-sort(distance.pair, decreasing = FALSE)
-```
 
 ```{r}
 # Construct palindrome count number
-palindrome.count <- c("1-88.4", "88.4-176","176-263","263-351","351-438","438-525","525-613", "613-700", "700-788", "788-875", "875-963", "963-1050", "1050-1140", "1140-1220")
-
 # Construct observed number of intervals
-intervals.observed <- c(51,28,27,26,13,15,15,10,7,9,7,9,11,13,9,6,11,7,5,5,6,6,9) 
+spacings.observed <- distance.pair
 
 # Construct expected number of intervals
-expected <- c()
-lambda <- sum(distance.pair)/(n-1)
-for (i in c(0:17)){
-  expect <- k* exp(-lambda)
-  expected <- c(expected, expect)
-}
-sum <- 0
-for (j in c(9:17)){
-  sum <- sum+expected[j]
-}
+spacings.expected <- c()
+lambda <- (n-1)/sum(distance.pair)
+spacings.expected <- rep((n-1)*exp(-lambda*400),n-1)
 
-intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
+chi_2 <- sum((spacings.observed - spacings.expected)^2/spacings.expected)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = n-3)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = n-3, lower.tail = FALSE)
+p_value
 
 # Visualization of the Residual (Need to be revised)
 
-# Sum of consecutive pairs, triplets, etc, spacings (Need to be revised)
-location.sorted <- sort(location$location, decreasing = FALSE)
-location.sorted[-1]-location.sorted[-length(location.sorted)]
 ```
 
 
@@ -188,6 +179,7 @@ Remark:
 The pink histogram and the red density curve represents the distribution and density for actual data.
 The light blue histogram and the blue density curve represents distribution for generated Poisson sequence.
 The purple histogram represents the overlapped area.
+
 ```{r}
 k <- 61
 tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
@@ -201,7 +193,6 @@ hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
 legend(x = 13, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
-
 
 # Additional testings on using different lengths of sub-intervals:
 ```{r}
@@ -245,12 +236,15 @@ legend(x = 18, y = 0.17, legend = c("sample", "Poisson"), lty = c(1,1), col = c(
 
 # Chi-square Goodness of Fit Test
 We computed that by Maximum likelihood and Method of Moments, the estimator for rate parameter lambda in a Poisson distibution is the x bar, which is the average sample rate. This estimator is unbiased. Since we estimated one parameter, the degree of freedom equals k-1-1 = 59.
+
+Case 1: When number of subintervals k = 61
 ```{r}
 # Divide the CMV DNA into 61 non overlapping regions of length 3583 bases
 k <- 61
 tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
 counts.obs <- as.vector(tab)
 a <- table(cut(counts.obs, breaks = seq(min(counts.obs), max(counts.obs), length.out = k+1), include.lowest = TRUE))
+a
 
 # Construct palindrome count number
 palindrome.count <- c("0,1,2", "3","4","5","6","7","8+")
@@ -291,18 +285,58 @@ p_value
 Residuals <- (intervals.observed-intervals.expected) / sqrt(intervals.expected)
 plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome Counts", main = "Plot of Standardized Residual for Counts")
 ```
+
+Case 1: When number of subintervals k = 1000
+```{r}
+# Divide the CMV DNA into 61 non overlapping regions of length 3583 bases
+k <- 1000
+tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
+counts.obs <- as.vector(tab)
+a <- table(cut(counts.obs, breaks = seq(min(counts.obs), max(counts.obs), length.out = k+1), include.lowest = TRUE))
+a
+
+
+
+```
+```{r}
+# Construct palindrome count number
+palindrome.count <- c("0,1,2", "3","4","5","6","7","8+")
+
+# Construct observed number of intervals
+intervals.observed <- c(8, 9, 13, 10, 8, 8, 5) 
+
+# Construct expected number of intervals
+expected <- c()
+lambda <- n/k
+for (i in c(0:17)){
+  expect <- k* exp(-lambda)* lambda**i /factorial(i)
+  expected <- c(expected, expect)
+}
+sum <- 0
+for (j in c(9:17)){
+  sum <- sum+expected[j]
+}
+intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
+
+# Create contingency table
+b <- data.frame(palindrome.count,intervals.observed,intervals.expected)
+b
+
+chi_2 <- sum((intervals.observed - intervals.expected)^2/intervals.expected)
+chi_2
+
+chi2_compare <- qchisq(p = 0.95, df = 7)
+chi2_compare
+
+p_value <- pchisq(chi_2, df = 7, lower.tail = FALSE)
+p_value
+
+```
+
+
+
 Null Hypothesis: Counts are not distributed according to Poisson distribution.
 Conclusion: Since p-value of this chi-square test is 1, we will reject the null hypothesis. From this computation, we see that deviations as large as ours are very much likely to be observed. Hence, we conclude that it appears that Poisson is a reasonable initial model. 
 
-
-# Design Test Statistic Testing for the Maximum Cluster
-```{r}
-
-```
-
-# Additional Question and Hypothesis
-```{r}
-
-```
 
 
