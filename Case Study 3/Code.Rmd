@@ -2,15 +2,82 @@
 title: "CASE STUDY 3: SEARCH FOR THE UNUSUAL CLUSTER IN THE PALINDROMES"
 output: html_notebook
 ---
+## Question
+How do we find clusters of palindromes? How do we determine whether a cluster is just a chance occurrence or a potential replication site?
 
-# Setup
+## Setup
 ```{r}
-locations <- read.table('hcmv-25kgjn1-1rfrtkc.txt', header=TRUE)$location
-data <- read.csv("RAW_DATA-2iwcznn-2kr2xw0.csv", header = TRUE)
+locations <- read.table('hcmv-25kgjn1-1rfrtkc.txt', header=TRUE)$location  # Original
+health <- read.csv('RAW_DATA-2iwcznn-2kr2xw0.csv', header = TRUE)  # Additional
 
-paste('Number of palindromes:', length(locations))
-summary(locations)
-boxplot(locations)
-dotchart(locations)
-hist(locations, breaks=20, main='Locations of Palindromes', xlab='Base Pair')
+N <- 229354  # Base pairs
+n <- 296  # Palindromes
 ```
+
+## Scenario 1: Random Scatter
+To begin, pursue the point of view that structure in the data is indicated by departures from a uniform scatter of palindromes across the DNA.
+
+*Of course, a random uniform scatter does that mean that palindromes will be equally spaced as milestones on a freeway. There will be some gaps on the DNA where no palindromes occur, and there will be some clumping together of palindromes.*
+
+To look for structure examine the locations of the palindromes, the spacing between palindromes, and the counts of palindromes in non overlapping regions of the DNA. One starting place might be to see first how random scatter looks by using a computer to simulate it.
+
+*A computer can simulate 296 palindrome sites chosen at random along a DNA sequence of 229,354 bases using a pseudo random number generator. When this is done several times, by making seller sets of simulated palindrome locations, then the real data can be compared to the simulated data.*
+```{r}
+set.seed(0)
+color <- 'red'
+
+# Generate 3 samples from the uniform distribution with the same size and bounds as our data.
+samples = list(sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)))
+
+
+
+# Dot plot of locations of palindromes in original data and uniform scatter.
+title1 <- 'Locations of Palindromes'
+title2 <- c(title1,'(Simulated)')
+x.axis <- 'Base Pair'
+symbol <- 3
+stripchart(locations, pch=symbol, col=color, main=title1, xlab=x.axis)
+for (sample in samples) {
+  stripchart(sample, pch=symbol, main=title2, xlab=x.axis)
+}
+
+# Additional dot plot of locations of palindromes in original data and uniform scatter.
+dotchart(locations, color=color, main=title1, xlab=x.axis)
+for (sample in samples) {
+  dotchart(sample, main=title2, xlab=x.axis)
+}
+
+# Histogram of locations of palindromes in original data and uniform scatter.
+bins <- 35
+hist(locations, col=color, breaks=bins, main=title1, xlab=x.axis)
+for (sample in samples) {
+  hist(sample, breaks=breaks, main=title2, xlab=x.axis)
+}
+
+
+
+# Scatterplot of spacing between consecutive palindromes
+title1 <- 'Spacing between Consecutive Palindromes'
+title2 <- c(title1,'(Simulated)')
+x.axis <- 'Base Pair Location'
+y.axis <- 'Distance (Base Pairs) from Previous Palindrome'
+y.range <- c(0,5000)
+plot(locations[-1], diff(locations), col=color, ylim=y.range, main=title1, xlab=x.axis, ylab=y.axis)
+for (sample in samples) {
+  plot(sample[-1], diff(sample), ylim=y.range, main=title2, xlab=x.axis, ylab=y.axis)
+}
+
+
+
+# Histogram of counts of palindromes in non-overlapping regions in original data and uniform scatter.
+interval.length <- 2500
+title1 <- paste('Number of Palindromes in Non-Overlapping Regions of Length', interval.length)
+title2 <- c(title1,'(Simulated)')
+x.axis <- 'Number of Palindromes'
+bins <- seq(0,20,1)
+hist(as.vector(table(cut(locations, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, col=color, main=title1, xlab=x.axis)
+for (sample in samples) {
+  hist(as.vector(table(cut(sample, breaks=seq(0,N,interval.length), include.lowest = TRUE))), breaks=bins, main=title2, xlab=x.axis)
+}
+```
+
