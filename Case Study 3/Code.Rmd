@@ -385,13 +385,14 @@ interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
 
 # Histogram of counts of palindromes in original data and poisson distribution
-counts.hist <- regionsplit(n.region, gene, locations)
-hist(counts.hist, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts of Palindrome Distribution Comparison (40 sub-intervals)", xlab = "Counts found per interval", ylim = c(0,0.6))
-lines(density(counts.hist, adjust = 2), col = rgb(1,0,0,0.5))
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (40 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.4))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
 Pois <- rpois(n, lambda)
 hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 7, y = 0.5, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
 
 # Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
@@ -448,13 +449,13 @@ interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
 
 # Histogram of counts of palindromes in original data and poisson distribution
-counts.hist <- regionsplit(n.region, gene, locations)
-hist(counts.hist, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts of Palindrome Distribution Comparison (60 sub-intervals)", xlab = "Counts found per interval", ylim = c(0,0.6))
-lines(density(counts.hist, adjust = 2), col = rgb(1,0,0,0.5))
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (60 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.4))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
 Pois <- rpois(n, lambda)
 hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 7, y = 0.5, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 
 # Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
@@ -506,13 +507,13 @@ interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
 
 # Histogram of counts of palindromes in original data and poisson distribution
-counts.hist <- regionsplit(n.region, gene, locations)
-hist(counts.hist, breaks= 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts of Palindrome Distribution Comparison (80 sub-intervals)", xlab = "Counts found per interval", ylim = c(0,0.6))
-lines(density(counts.hist, adjust = 2), col = rgb(1,0,0,0.5))
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (80 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.5))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
 Pois <- rpois(n, lambda)
 hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
 lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 7, y = 0.5, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 
 # Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
