@@ -339,4 +339,7 @@ Null Hypothesis: Counts are not distributed according to Poisson distribution.
 Conclusion: Since p-value of this chi-square test is 1, we will reject the null hypothesis. From this computation, we see that deviations as large as ours are very much likely to be observed. Hence, we conclude that it appears that Poisson is a reasonable initial model. 
 
 
+```{r}
+
+```
 
