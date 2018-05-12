@@ -143,8 +143,8 @@ x.axis <- 'Base Pair'
 bins <- 35
 hist(locations, breaks=bins, probability=TRUE, col=rgb(1,0,0,0.5), main=title, xlab=x.axis)
 lines(density(locations, adjust=2), col=2)
-hist(uniform, breaks=bins, probability=TRUE, col=rgb(0,0,1,0.5), add=TRUE)
-lines(density(uniform, adjust=2), col=4)
+hist(sample, breaks=bins, probability=TRUE, col=rgb(0,0,1,0.5), add=TRUE)
+lines(density(sample, adjust=2), col=4)
 legend('topright', legend=c('Original', 'Uniform'), lty=c(1,1), col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
 ```
 Inference:
@@ -325,7 +325,7 @@ legend(x = 5000, y = 0.0003, legend = c("Sample", "Gamma"), lty = c(1,1), col = 
 spacings.observed <- sort(distance.triplets, decreasing = FALSE)
 lambda <- 2/mean(distance.pairs)
 spacings.intervals <- as.numeric(quantile(spacings.observed, probs = c(0,0.05, 0.1, 0.3, 0.5, 0.7, 0.9,1)))
-spacings.expected <- (n-1)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
+spacings.expected <- (n-3)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
 spacings.expected[length(spacings.expected)] <- n-sum(spacings.expected[1:length(spacings.expected)-1])
 spacings.observed <- as.numeric(table(cut(distance.pairs, breaks = spacings.intervals, include.lowest = TRUE)))
 contingency_7 <- data.frame(spacings.intervals[-1],spacings.observed,spacings.expected)
@@ -343,7 +343,7 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 # Construct expected number of intervals
 spacings.observed <- sort(distance.pairs, decreasing = FALSE)
 spacings.intervals <- as.numeric(quantile(spacings.observed, probs = c(seq(0,1, by = 0.1))))
-spacings.expected <- (n-1)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
+spacings.expected <- (n-3)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
 spacings.expected[length(spacings.expected)] <- n-sum(spacings.expected[1:length(spacings.expected)-1])
 spacings.observed <- as.numeric(table(cut(distance.pairs, breaks = spacings.intervals, include.lowest = TRUE)))
 contingency_10 <- data.frame(spacings.intervals[-1],spacings.observed,spacings.expected)
@@ -361,7 +361,7 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 # Construct expected number of intervals
 spacings.observed <- sort(distance.pairs, decreasing = FALSE)
 spacings.intervals <- as.numeric(quantile(spacings.observed, probs = c(seq(0,1, by = 0.05))))
-spacings.expected <- (n-1)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
+spacings.expected <- (n-3)*(exp(-lambda*spacings.intervals[-length(spacings.intervals)])-exp(-lambda*spacings.intervals[-1]))
 spacings.expected[length(spacings.expected)] <- n-sum(spacings.expected[1:length(spacings.expected)-1])
 spacings.observed <- as.numeric(table(cut(distance.pairs, breaks = spacings.intervals, include.lowest = TRUE)))
 contingency_20 <- data.frame(spacings.intervals[-1],spacings.observed,spacings.expected)
@@ -381,56 +381,156 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 ## Scenario 3: Counts
 Use graphical methods and more formal statistical tests to examine the counts of palindromes in various regions of the DNA. Split the DNA into nonoverlapping regions of equal length to compare the number of palindomres in an interval to the number of that you would expect from uniform random scatter. The counts for shorter regions will be more variable than those for logner regions. Also, consider classifying the regions according to the number of counts.
 ```{r}
-k <- 50
-tab <- table(cut(locations, breaks = seq(0, N, length.out = k+1), include.lowest = TRUE))
-counts.obs <- as.vector(tab)
-a <- table(cut(counts.obs, breaks = seq(min(counts.obs), max(counts.obs), length.out = k+1), include.lowest = TRUE))
-
-# Histogram of counts of palindromes in original data and poisson distribution
-hist(counts.obs, breaks = 15, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (50 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.2))
-lines(density(counts.obs, adjust = 2), col = rgb(1,0,0,0.5))
-Pois <- rpois(n, lambda = mean(counts.obs))
-hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
-lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
-legend(x = 12, y = 0.15, legend = c("sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
-
-# Chi-Square Testing
-# Construct palindrome count number
-palindrome.count <- c("0,1,2", "3","4","5","6","7","8+")
-# Construct observed number of intervals
-intervals.observed <- c(8, 9, 13, 10, 8, 8, 5) 
-# Construct expected number of intervals
-expected <- c()
-lambda <- n/k
-for (i in c(0:17)){
-  expect <- k* exp(-lambda)* lambda**i /factorial(i)
-  expected <- c(expected, expect)
+regionsplit <- function(n.region, gene, site){
+  count.int <- table(cut(site, breaks = seq(1, length(gene), length.out=n.region+1), include.lowest=TRUE))
+  count.vector <- as.vector(count.int)
+  count.tab <- table(count.vector)
+  return (count.tab)
 }
-sum <- 0
-for (j in c(9:17)){
-  sum <- sum+expected[j]
-}
-intervals.expected <- c(expected[1]+expected[2]+expected[3],expected[4],expected[5],expected[6],expected[7],expected[8],sum)
-
-# Create contingency table
-b <- data.frame(palindrome.count,intervals.observed,intervals.expected)
-b
-
-chi_2 <- sum((intervals.observed - intervals.expected)^2/intervals.expected)
-chi2_compare <- qchisq(p = 0.95, df = 7)
-p_value <- pchisq(chi_2, df = 7, lower.tail = FALSE)
-print(cat("\nWhen conducting chi_square Goodness of fit test comparing locations(divided in 500 sub-intervals) against uniform distribution\n"))
-print(paste("The value of chi_square statistic is", chi_2))
-print(paste("The p_value is", p_value))
-
-
-=======
-distance.triplets
-locations
->>>>>>> 7c6d91162e942248a72b7376e3ba96a0cbefb500
->>>>>>> 2503966c4effba0274039c0ceaf32f9c4bc4a90e
 ```
-Gam <- rgamma(n-2, 2, rate = 2/mean(distance.triplets))
+
+```{r}
+# Case 1: divided by 40 intervals
+n.region <- 40
+gene <- seq(1,N)
+
+observed <- as.numeric(regionsplit(n.region, gene, locations))
+interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
+lambda <- n/n.region
+expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
+for (i in c(0:2)){
+  expect <- n.region*exp(-lambda)* lambda**(i)/factorial(i)
+  expected[1] <- expected[1]+ expect
+}
+expect <- n.region*exp(-lambda)* lambda**(11)/factorial(11)
+expected[8] <- expected[8]+ expect
+expected[10] <- 0
+for (i in c(1:12)){
+  expect <- exp(-lambda)* lambda**(i)/factorial(i)
+  expected[10] <- expected[10]+ expect
+}
+expected[10] <- (1-expected[10])*n.region
+counts.expected <- c()
+counts.interval <- c()
+counts.observed <- c()
+# Group bins
+counts.expected[1] <- sum(expected[1:2])
+counts.expected[2] <- sum(expected[3:4])
+counts.expected[3] <- sum(expected[5])
+counts.expected[4] <- sum(expected[6:7])
+counts.expected[5] <- sum(expected[8:10])
+counts.observed[1] <- sum(observed[1:2])
+counts.observed[2] <- sum(observed[3:4])
+counts.observed[3] <- sum(observed[5])
+counts.observed[4] <- sum(observed[6:7])
+counts.observed[5] <- sum(observed[8:10])
+counts.interval[1] <- interval[2]
+counts.interval[2] <- interval[4]
+counts.interval[3] <- interval[5]
+counts.interval[4] <- interval[7]
+counts.interval[5] <- interval[7]+1
+counts.table40 <- data.frame(counts.interval,counts.observed,counts.expected)
+counts.table40
+# Chi-square statistic
+chi_2 <- sum((counts.observed - counts.expected)^2/counts.expected)
+chi2_compare <- qchisq(p = 0.95, df = 3)
+p_value <- pchisq(chi_2, df = 3, lower.tail = FALSE)
+print(paste("The p_value when the distance is splited into 40 sub-intervals is", p_value))
+## Visualization of the Residual
+Residuals <- (counts.observed - counts.expected) / sqrt(counts.expected)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome counts", main = "Plot of Standardized Residual for Counts (divided in 40 sub-intervals)")
+
+```
+```{r}
+# Case 2: divided by 60 intervals
+n.region <- 60
+gene <- seq(1,N)
+
+observed <- as.numeric(regionsplit(n.region, gene, locations))
+interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
+lambda <- n/n.region
+expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
+expect <- n.region*exp(-lambda)* lambda**(0)/factorial(0)
+expected[1] <- expected[1]+ expect
+for (i in c(10:11)){
+  expect <- n.region*exp(-lambda)* lambda**(i)/factorial(i)
+  expected[9] <- expected[9]+ expect
+}
+expected[11] <- 0
+for (i in c(1:12)){
+  expect <- exp(-lambda)* lambda**(i)/factorial(i)
+  expected[11] <- expected[11]+ expect
+}
+expected[11] <- (1-expected[11])*n.region
+counts.expected <- c()
+counts.interval <- c()
+counts.observed <- c()
+# Group bins
+counts.expected[1] <- sum(expected[1:2])
+counts.expected[2:6] <- expected[3:7]
+counts.expected[7] <- sum(expected[8:11])
+counts.observed[1] <- sum(observed[1:2])
+counts.observed[2:6] <- observed[3:7]
+counts.observed[7] <- sum(observed[8:11])
+counts.interval[1] <- interval[2]
+counts.interval[2:6] <- interval[3:7]
+counts.interval[7] <- interval[7]+1
+counts.table60 <- data.frame(counts.interval,counts.observed,counts.expected)
+counts.table60
+# Chi-square statistic
+chi_2 <- sum((counts.observed - counts.expected)^2/counts.expected)
+chi2_compare <- qchisq(p = 0.95, df = 5)
+p_value <- pchisq(chi_2, df = 5, lower.tail = FALSE)
+print(paste("The p_value when the distance is splited into 60 sub-intervals is", p_value))
+## Visualization of the Residual
+Residuals <- (counts.observed - counts.expected) / sqrt(counts.expected)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome counts", main = "Plot of Standardized Residual for Counts (divided in 60 sub-intervals)")
+```
+
+```{r}
+# Case 3: divided by 80 intervals
+n.region <- 80
+gene <- seq(1,N)
+
+observed <- as.numeric(regionsplit(n.region, gene, locations))
+interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
+lambda <- n/n.region
+expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
+for (i in c(8:9)){
+  expect <- n.region*exp(-lambda)* lambda**(i)/factorial(i)
+  expected[9] <- expected[9]+ expect
+}
+expected[10] <- 0
+for (i in c(1:10)){
+  expect <- exp(-lambda)* lambda**(i)/factorial(i)
+  expected[10] <- expected[10]+ expect
+}
+expected[10] <- (1-expected[10])*n.region
+counts.expected <- c()
+counts.interval <- c()
+counts.observed <- c()
+# Group bins
+counts.expected[1] <- sum(expected[1:2])
+counts.expected[2:6] <- expected[3:7]
+counts.expected[7] <- sum(expected[8:10])
+counts.observed[1] <- sum(observed[1:2])
+counts.observed[2:6] <- observed[3:7]
+counts.observed[7] <- sum(observed[8:10])
+counts.interval[1] <- interval[2]
+counts.interval[2:6] <- interval[3:7]
+counts.interval[7] <- interval[7]+1
+counts.table60 <- data.frame(counts.interval,counts.observed,counts.expected)
+counts.table60
+# Chi-square statistic
+chi_2 <- sum((counts.observed - counts.expected)^2/counts.expected)
+chi2_compare <- qchisq(p = 0.95, df = 5)
+p_value <- pchisq(chi_2, df = 5, lower.tail = FALSE)
+print(paste("The p_value when the distance is splited into 60 sub-intervals is", p_value))
+## Visualization of the Residual
+Residuals <- (counts.observed - counts.expected) / sqrt(counts.expected)
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome counts", main = "Plot of Standardized Residual for Counts (divided in 60 sub-intervals)")
+```
+
 ## Scenario 4: The Biggest Cluster
 Does the interval with the greatest number of palindromes indicate a potential origin of replication? Be careful in making your intervals, for any small, but significant deviations from random scatter, such as a tight cluster of a few palindromes, could easily go undetected if the regions examined are too large. Also, if the regions are too small, a cluster of palindromes may be split between adjacent interavls and not appear as a high-count interval.
 ```{r}
@@ -453,7 +553,7 @@ for (k in 20:100){
 result <- data.frame(lamda,interval_length,final)
 
 # Display Table containing the probability of a Poisson Distribution having e greatest number of hits at least k for each sub-interval divisions
-result[c(20:100),]
+result[c(40,60,80),]
 ```
 
 
