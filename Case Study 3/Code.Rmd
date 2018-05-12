@@ -31,7 +31,7 @@ set.seed(0)
 color <- 'red'
 
 # Generate 3 samples from the uniform distribution with the same size and bounds as our data
-samples=list(sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)))
+uniform.samples=list(sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)), sort(runif(n, min=0, max=N)))
 
 # Dot plot of locations of palindromes in original data and uniform scatter
 title1 <- 'Locations of Palindromes'
@@ -39,24 +39,22 @@ title2 <- c(title1,'(Simulated)')
 x.axis <- 'Base Pair'
 symbol <- 3
 stripchart(locations, pch=symbol, col=color, main=title1, xlab=x.axis)
-for (sample in samples) {
+for (sample in uniform.samples) {
   stripchart(sample, pch=symbol, main=title2, xlab=x.axis)
 }
 
 # Additional dot plot of locations of palindromes in original data and uniform scatter
 dotchart(locations, color=color, main=title1, xlab=x.axis)
-for (sample in samples) {
+for (sample in uniform.samples) {
   dotchart(sample, main=title2, xlab=x.axis)
 }
 
 # Histogram of locations of palindromes in original data and uniform scatter
 bins <- 35
 hist(locations, col=color, breaks=bins, main=title1, xlab=x.axis)
-for (sample in samples) {
+for (sample in uniform.samples) {
   hist(sample, breaks=bins, main=title2, xlab=x.axis)
 }
-
-
 
 # Scatterplot of spacing between consecutive palindromes
 title1 <- 'Spacing between Consecutive Palindromes'
@@ -65,11 +63,9 @@ x.axis <- 'Base Pair Location'
 y.axis <- 'Distance (Base Pairs) from Previous Palindrome'
 y.range <- c(0,5000)
 plot(locations[-1], diff(locations), col=color, ylim=y.range, main=title1, xlab=x.axis, ylab=y.axis)
-for (sample in samples) {
+for (sample in uniform.samples) {
   plot(sample[-1], diff(sample), ylim=y.range, main=title2, xlab=x.axis, ylab=y.axis)
 }
-
-
 
 # Histogram of counts of palindromes in non-overlapping regions in original data and uniform scatter
 interval.length <- 2500
@@ -78,11 +74,51 @@ title2 <- c(title1,'(Simulated)')
 x.axis <- 'Number of Palindromes'
 bins <- seq(0,20,1)
 hist(as.vector(table(cut(locations, breaks=seq(0,N,interval.length), include.lowest=TRUE))), breaks=bins, col=color, main=title1, xlab=x.axis)
-for (sample in samples) {
+for (sample in uniform.samples) {
   hist(as.vector(table(cut(sample, breaks=seq(0,N,interval.length), include.lowest=TRUE))), breaks=bins, main=title2, xlab=x.axis)
 }
 ```
 
+
+## Scenario 2: Locations and Spacings
+Use graphical methods to examine the spacings between consecutive palindromes and sum of consecutive pairs, triplets, etc, spacings. Compare what you find to what you would expect to find in a random scatter. Also, use graphical methods to compare locations of the palindromes.
+```{r}
+seed <- 0
+uniform.sample <- runif(n, min=0, max=N)
+
+for (num.regions in c(30,35,45,50,55,59)) {
+  expected.counts <- rep(n/num.regions, num.regions)
+  observed.counts <- as.vector(table(cut(locations, breaks=seq(0,N,length.out=num.regions+1), include.lowest=TRUE)))
+  
+  hist(locations, breaks=num.regions, probability=TRUE, col=rgb(1,0,0,0.5), main=paste('Locations of Palindromes (Original vs. Simulated) in',num.regions,'Sub-Intervals'), xlab='Base Pair')
+  hist(uniform.sample, breaks=num.regions, probability=TRUE, col=rgb(0,0,1,0.5), add=TRUE)
+  lines(density(locations, adjust=2), col=2)
+  lines(density(uniform, adjust=2), col=4)
+  legend('topright', legend=c('Original', 'Uniform'), lty=c(1,1), col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+  
+  print(num.regions)
+  print(chisq.test(observed.counts, p=expected.counts/n))
+  
+  residuals <- (observed.counts - expected.counts) / sqrt(expected.counts)
+  plot(residuals, type='h', main=paste('Standardized Residuals of Number of Palindromes for',num.regions,'Sub-Intervals'), xlab='Sub-Interval Index', ylab='Standardized Residuals')
+}
+
+for (shape in 1:3) {
+  spacings <- diff(locations, lag=shape)
+
+  hist(probability=TRUE, spacings, col=rgb(1,0,0,0.5), main="Consecutive Palindrome Spacings Distribution Comparison", xlab="Distance between Consecutive Palindromes")
+  hist(probability=TRUE, rgamma(n, shape=shape, rate=lambda), col=rgb(0,0,1,0.5), add=TRUE)
+  legend('topright', legend=c('Original','Exponential/Gamma'), lty=c(1,1), col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+  
+  width <- 500 * shape
+  bins <- c(0,0.5*width,width,2*width,max(spacings))
+  observed.spacings <- as.vector(table(cut(spacings, breaks=bins, include.lowest=TRUE)))
+  lambda <- 1/mean(spacings)
+  probabilities <- c(0, pgamma(bins[2], shape=shape, rate=lambda), pgamma(bins[3], shape=shape, rate=lambda), pgamma(bins[4], shape=shape, rate=lambda), 1)
+  print(chisq.test(observed.spacings, p=diff(probabilities)))
+  diff(probabilities)
+}
+```
 
 ## Scenario 2: Locations and Spacings
 Use graphical methods to examine the spacings between consecutive palindromes and sum of consecutive pairs, triplets, etc, spacings. Compare what you find to what you would expect to find in a random scatter. Also, use graphical methods to compare locations of the palindromes.
@@ -366,6 +402,7 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 
 ## Scenario 3: Counts
 Use graphical methods and more formal statistical tests to examine the counts of palindromes in various regions of the DNA. Split the DNA into nonoverlapping regions of equal length to compare the number of palindomres in an interval to the number of that you would expect from uniform random scatter. The counts for shorter regions will be more variable than those for logner regions. Also, consider classifying the regions according to the number of counts.
+
 ```{r}
 regionsplit <- function(n.region, gene, site){
   count.int <- table(cut(site, breaks = seq(1, length(gene), length.out=n.region+1), include.lowest=TRUE))
@@ -375,15 +412,25 @@ regionsplit <- function(n.region, gene, site){
 }
 ```
 
-<<<<<<< HEAD
 ```{r}
 # Case 1: divided by 40 intervals
 n.region <- 40
 gene <- seq(1,N)
-
 observed <- as.numeric(regionsplit(n.region, gene, locations))
 interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
+
+# Histogram of counts of palindromes in original data and poisson distribution
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (40 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.4))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda)
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
+
+# Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
 for (i in c(0:2)){
   expect <- n.region*exp(-lambda)* lambda**(i)/factorial(i)
@@ -436,6 +483,17 @@ gene <- seq(1,N)
 observed <- as.numeric(regionsplit(n.region, gene, locations))
 interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
+
+# Histogram of counts of palindromes in original data and poisson distribution
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (60 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.4))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda)
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
+# Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
 expect <- n.region*exp(-lambda)* lambda**(0)/factorial(0)
 expected[1] <- expected[1]+ expect
@@ -452,6 +510,7 @@ expected[11] <- (1-expected[11])*n.region
 counts.expected <- c()
 counts.interval <- c()
 counts.observed <- c()
+
 # Group bins
 counts.expected[1] <- sum(expected[1:2])
 counts.expected[2:6] <- expected[3:7]
@@ -482,6 +541,17 @@ gene <- seq(1,N)
 observed <- as.numeric(regionsplit(n.region, gene, locations))
 interval <- as.numeric(names(regionsplit(n.region, gene, locations)))
 lambda <- n/n.region
+
+# Histogram of counts of palindromes in original data and poisson distribution
+counts <- as.vector(table(cut(locations, breaks = seq(0, N, length.out = n.region+1), include.lowest = TRUE)))
+hist(counts, breaks = bins, col = rgb(1,0,0,0.5), probability = TRUE, main = "Counts Distribution Comparison (80 Sub-intervals)", xlab = "Number of Palindromes Sites Inside an Interval", ylim = c(0,0.5))
+lines(density(counts, adjust = 2), col = rgb(1,0,0,0.5))
+Pois <- rpois(n, lambda)
+hist(Pois, breaks = 15, col = rgb(0,0,1,0.5), probability = TRUE, add = TRUE)
+lines(density(Pois, adjust = 2), col = rgb(0,0,1,0.5))
+legend(x = 18, y = 0.17, legend = c("Sample", "Poisson"), lty = c(1,1), col = c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+
+# Chi-sqr Goodness of Fit test
 expected <- n.region*exp(-lambda)* lambda**(interval)/factorial(interval)
 for (i in c(8:9)){
   expect <- n.region*exp(-lambda)* lambda**(i)/factorial(i)
@@ -515,19 +585,9 @@ p_value <- pchisq(chi_2, df = 5, lower.tail = FALSE)
 print(paste("The p_value when the distance is splited into 60 sub-intervals is", p_value))
 ## Visualization of the Residual
 Residuals <- (counts.observed - counts.expected) / sqrt(counts.expected)
-plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome counts", main = "Plot of Standardized Residual for Counts (divided in 60 sub-intervals)")
+plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome counts", main = "Plot of Standardized Residual for Counts (divided in 80 sub-intervals)")
 ```
-=======
-chi_2 <- sum((intervals.observed - intervals.expected)^2/intervals.expected)
-chi2_compare <- qchisq(p = 0.95, df = 7)
-p_value <- pchisq(chi_2, df = 7, lower.tail = FALSE)
-print(cat("\nWhen conducting chi_square Goodness of fit test comparing locations(divided in 500 sub-intervals) against uniform distribution\n"))
-print(paste("The value of chi_square statistic is", chi_2))
-print(paste("The p_value is", p_value))
-```
-Gam <- rgamma(n-2, 2, rate = 2/mean(distance.triplets))
 
->>>>>>> 9a8901feff3c4039c2493d84963ed7a109114a9f
 
 ## Scenario 4: The Biggest Cluster
 Does the interval with the greatest number of palindromes indicate a potential origin of replication? Be careful in making your intervals, for any small, but significant deviations from random scatter, such as a tight cluster of a few palindromes, could easily go undetected if the regions examined are too large. Also, if the regions are too small, a cluster of palindromes may be split between adjacent interavls and not appear as a high-count interval.
@@ -593,6 +653,8 @@ hiv_proportion_last<-nrow(health[which(health$age_yrs>60 & health$hiv=='positive
 population_dist <-c(age_proportion_first,age_proportion_second,age_proportion_third,age_proportion_last)
 # Observed Data
 hiv_dist<-c(hiv_proportion_first,hiv_proportion_second,hiv_proportion_third,hiv_proportion_last)
+age_dist <- c("0-20", "21-40", "41-60", "61+")
+data.frame(age_dist,population_dist,hiv_dist)
 
 # Goodness-fittest
 chi_2 <- sum((hiv_dist - population_dist)^2/population_dist)
