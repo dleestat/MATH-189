@@ -1,0 +1,204 @@
+I. Introduction
+
+    A network of automatic data buoys for monitoring synoptic-scale fields of 
+pressure, temperature, and ice motion throughout the Arctic Basin was 
+recommended by the U.S. National Academy of Sciences in 1974. Based on the 
+Academy's recommendation, the Arctic Ocean Buoy Programme was established by the
+Polar Science Center, University of Washington, in 1978 to support the Global 
+Weather Experiment. Operations began in early 1979 and the program continued 
+through 1990 with funding from various agencies. In 1991, the Arctic Ocean Buoy 
+Programme was superseded by the International Arctic Buoy Programme (IABP), 
+although the basic objective remains the same: to establish and maintain a
+network of drifting buoys in the Arctic Ocean to collect data needed for
+real-time operations and meteorological and oceanographic research.
+
+    Annual reports on this data were published from 1979 through the present.
+
+
+
+II. Data Processing
+
+   Data for these reports were processed as outlined in the 1986 data report
+with the exception that we have reverted to 3-hourly interpolation of sea-level
+pressure and air temperature. The average daily temperature was calculated from
+these eight measurements; an asterisk in the tabular data indicates that one or
+more of these measurements was not available.
+
+
+
+APPENDIX: AVAILABLE DATA SETS
+
+Data Set AB:
+
+   Twelve-hourly pressure and temperature fields.   These data can be read with
+the following FORTRAN statements:
+
+
+        INTEGER LAT, LD, LH, LONG, LM, LY, PX, PXX, PXY, PY, PYY
+        REAL    EP, ET, P, T
+
+        READ (,1) LY, LM, LD, LH, LAT, LONG, P, T, EP, ET, PX, PY,
+                  PXX, PXY, PYY
+      1 FORMAT       (4I3, I4, I5, F8.1, F7.1, 2F5.1, 2I5, 3I6)
+
+        LY       is the year less 1900. Ie. LY = 92.
+        LM       is the month; 1 for January, 2 for February, etc.
+        LD       is the day of the month.
+        LH       is the hour in GMT; LH = 0 or 12.
+        LAT      is the latitude in degrees north.
+        LONG     is the longitude in degrees east.
+        P        is the interpolated pressure in millibars.
+        T        is the interpolated temperature in degrees Celsius 
+                 averaged from LH -12 to LH + 12 hours.
+        EP       is the interpolation error variance in millibars squared.
+        ET       is the interpolation error variance in degrees Celsius
+                 squared.
+        PX, PY   are the pressure derivatives times 10^3 in the x and y
+                 direction. PX and PY are in units of millibars per
+                 kilometer.
+        PXX,     are the interpolated second derivatives of 
+        PYY,     pressure times 10^6. Units are in millibars per 
+        PXY      kilometer squared.
+
+
+Data Set C:
+
+    Daily buoy positions. These data can be read with the following
+FORTRAN statements:
+
+        INTEGER ID, LD, LH, LM, LY
+        REAL    LAT, LONG
+
+        READ (,1) LY, LM, LD, LH, ID, LAT, LONG
+      1 FORMAT  (4I3, I5, F7.3, F9.3)
+
+        LY       is the year less 1900. Ie. LY = 92.
+        LM       is the month; 1 for January, 2 for February, etc.
+        LD       is the day of the month.
+        LH       is the hour in GMT; LH = 0 or 12.
+        ID       is the buoy identification.
+        LAT      is the latitude in degrees north.
+        LONG     is the longitude in degrees east.
+
+
+Data Set D:
+
+    Interpolated ice velocity fields.  This data set contains ice velocity
+estimates at a fixed grid of points.  The data can be read with these FORTRAN
+statements:
+
+        INTEGER LAT, LD, LH, LM, LONG, LY
+        REAL       DUDX, DUDY, DVDX, DVDY, SIGMA2, UX, UY
+
+        READ (,1) LY, LM, LD, LH, LAT, LONG, UX, UY,
+                  SIGMA2, DUDX, DUDY, DVDX, DVDY
+      1 FORMAT       (4I3, I4, I5, 2F7.1, F5.1, 4F8.2)
+
+        LY       is the year less 1900. Ie. LY = 92.
+        LM       is the month; 1 for January, 2 for February, etc.
+        LD       is the day of the month.
+        LH       is the hour in GMT; LH = 0 or 12.
+        LAT      is the latitude in degrees north.
+        LONG     is the longitude in degrees east.
+        UX       is the interpolated ice velocity in the x direction in cm/s.
+        UY       is the interpolated ice velocity in the y direction in cm/s.
+        SIGMA2   is the variance of the interpolation error in velocity,   
+                 in dimensionless   units.   No confidence should be
+                 placed in interpolated velocities for which SIGMA2 > 0.5.
+        DUDX, DUDY,     are interpolated   velocity   derivatives expressed in 
+        DVDX, DVDY      Cartesian coordinates. After multiplication by 10 -7   
+                        the reported values have units of s-1.
+
+
+Note on Coordinates: The pressure and velocity derivatives are expressed with 
+respect to a rectangular coordinate system with the origin at the North Pole,
+the x axis coinciding with the Greenwich Meridian, and the y axis with the 90E 
+Meridian. The transformation from latitude and longitude to x and y is:
+
+        x = 110.949 (90 - lat) cos (long)
+        y = 110.949 (90 - lat) sin (long)
+
+where x and y are in kilometers and latitude and longitude are in degrees.
+
+
+
+
+
+Availability: These data sets are archived at the World Data Center
+A: Glaciology and can be obtained on magnetic tapes as described below or
+via anonymous FTP.  Inquiries should be addressed to:
+
+         National Snow and Ice Data Center
+         CIRES, Campus Box 449
+         University of Colorado
+         Boulder, Colorado 80309 U.S.A.
+
+         Telephone (303) 492-5171
+
+
+
+The authors can be contacted at:
+
+         University of Washington
+         Polar Science Center
+         1013 N.E. 40th Street
+         Seattle, WA 98105 U.S.A.
+
+         Telephone (206) 543-1300
+
+
+FOREWORD
+
+The International Arctic Buoy Programme (IABP) is funded and managed by its
+participants.  Representing eight countries, participants include operational
+and research agencies, meteorological and oceanographic institutes, and
+nongovernmental organizations.  Participant contributions include equipment,
+services, and program coordination, as well as funding.  
+
+
+IABP participants are:
+
+Alfred-Wegener Institute for Polar and Marine Research			Germany
+Arctic and Antarctic Research Institute					Russia
+Christian Michelsen Research						Norway
+Meteorological Service of Environment Canada				Canada
+	Assisted by other agencies including:
+		Polar Continental Shelf Project
+		Canadian Coast Guard
+		Canadian Forces
+		Institute of Ocean Sciences
+International Arctic Research Center					U.S.
+Japan Marine Science and Technology Center				Japan
+Marine Environmental Data Service					Canada
+National Ice Center							U.S.
+	Representing:
+		National Aeronautics and Space Administration
+		National Science Foundation
+		National Oceanic and Atmospheric Administration
+		Office of Naval Research
+Naval Meteorology and Oceanography Command				U.S.
+Naval Oceanographic Office						U.S.
+Norsk Polarinstitutt							Norway
+Norwegian Meteorological Institute					Norway
+Pacific Marine Environmental Laboratory					U.S.
+Polar Science Center / Applied Physics Laboratory /			U.S.
+		University of Washington
+Service Argos								France
+U.K. Meteorological Office						U.K.
+Woods Hole Oceanographic Institution					U.S.
+World Climate Research Programme /					international
+		World Meteorological Organization
+Intergovernmental Oceanographic Commission				international
+International Council of Scientific Unions		 		international
+
+
+
+
+ACKNOWLEDGMENTS
+
+The International Arctic Buoy Programme is partially funded through the U.S.
+Interagency Arctic Buoy Programme (USIABP).  We are grateful to Christopher Oconners
+of the U.S. Navy/NOAA National Ice Center, Chairman of USIABP, for his continued
+support of the data handling portion of the IABP.  Preparation of the latest
+reports and archiving of the data were funded through ONR contract
+N00014-98-1-0698.

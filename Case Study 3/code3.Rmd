@@ -590,7 +590,7 @@ plot(Residuals, type = 'h', ylab = "Standardized Residuals", xlab = "Palindrome 
 
 
 ## Scenario 4: The Biggest Cluster
-Does the interval with the greatest number of palindromes indicate a potential origin of replication? Be careful in making your intervals, for any small, but significant deviations from random scatter, such as a tight cluster of a few palindromes, could easily go undetected if the regions examined are too large. Also, if the regions are too small, a cluster of palindromes may be split between adjacent interavls and not appear as a high-count interval.
+Does the interval with the greatest number of palindromes indicate a potential origin of replication? Be careful in making your intervals, for any small, but significant deviations from random scatter, such as a tight cluster of a few palindromes, could easily go undetected if the regions examined are too large. Also, if the regions are too small, a cluster of palindromes may be split between adjacent intervals and not appear as a high-count interval.
 ```{r}
 final <- array(dim=c(500,1))
 interval_length <- array(dim=c(500,1))
