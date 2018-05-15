@@ -22,7 +22,8 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 ## Setup
 ```{r}
 data <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
-head(data)
+density.label <- expression('Density (g/cm'^3*')')
+gain.label <- 'Gain'
 ```
 
 
@@ -33,6 +34,8 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
+plot(data, xlab=density.label)
+
 #average out the data for each x
 library(data.table)
 data_cleaned<- data[,.(mean(data$gain)),by= .(data$density)]
