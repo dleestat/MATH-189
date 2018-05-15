@@ -6,7 +6,7 @@ output: html_notebook
 This study allows us to revisit/renew
 
 1. Regression modeling
-2. Properties of Least Squares/Fitting ???a line???
+2. Properties of Least Squares/Fitting "a line"
 3. Multiple observation
 
 Datasets for this study are
