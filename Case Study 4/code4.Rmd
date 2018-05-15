@@ -33,7 +33,9 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
-
+#average out the data for each x
+library(data.table)
+data_cleaned<- data[,.(mean(data$gain)),by= .(data$density)]
 correlation <-cor(data$density,data$gain)
 #least squares line
 fit<-lm(data$gain~data$density)
