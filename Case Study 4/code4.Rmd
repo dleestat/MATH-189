@@ -21,9 +21,7 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 
 ## Setup
 ```{r}
-data <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
-density.label <- expression('Density (g/cm'^3*')')
-gain.label <- 'Gain'
+raw <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
 ```
 
 
@@ -34,25 +32,38 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
-plot(data, xlab=density.label)
+# Plot raw data
+density <- expression('Density (g/cm'^3*')')
+gain <- 'Gain'
+color <- 'red'
+
+plot(raw$density, raw$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
+plot(raw$gain, raw$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+
+density <- expression('log(Density) (g/cm'^3*')')
+
+plot(log(raw$gain), raw$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+
+library(data.table)
+raw[,.mean(gain)]
 
 #average out the data for each x
 library(data.table)
-data_cleaned<- data[,.(mean(data$gain)),by= .(data$density)]
-correlation <-cor(data$density,data$gain)
+raw_cleaned<- raw[,.(mean(raw$gain)),by= .(raw$density)]
+correlation <-cor(raw$density,raw$gain)
 #least squares line
-fit<-lm(data$gain~data$density)
+fit<-lm(raw$gain~raw$density)
 summary(fit)
 #standardized residual
 fit.std<- rstandard(fit)
-plot(data, 
+plot(raw, 
   	xlab="density", ylab="gain", 
    main="density vs gain")
-#plot(data$gain,residual)
+#plot(raw$gain,residual)
 abline(coefficients((fit)),lwd=2,lty=2,col="red")
 yfit<-fit$fitted.values
-resid<-data$gain-yfit
-plot(data$density,resid)
+resid<-raw$gain-yfit
+plot(raw$density,resid)
 #best fit line on a residual plot
 abline(0,0,col="red")
 #use qqplot to find the normality of residual
@@ -66,8 +77,6 @@ curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
 lines(density(fit.std),col="red")
 #add caption
 legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
-
-
 ```
 
 
