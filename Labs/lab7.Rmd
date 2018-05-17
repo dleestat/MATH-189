@@ -25,7 +25,7 @@ Here we are going to consider a least squares fit of the data. Please keep in mi
 
 Rather than hand-computing the least squares solution, we will utilize one of the most popular functions in R, *lm()* function. The main argument of the function is the first argument *formula*. It should be provided in the form y ~ x, where y is the response and x is the explanatory variable.
 ```{r}
-fit <- lm(formula=dist~speed, data=cars)
+fit <- lm(formula=dist~speed, data=cars)  # lm(formula=cars$dist~cars$speed)
 fit
 ```
 
@@ -124,7 +124,7 @@ install.packages("ggplot2")
 *ggplot2* is a popular visualization package in *R*. We encourage you to explore more when you get a chance. We will first see an example of how *geom_smooth* can help visualize the linear model fit.
 ```{r}
 library(ggplot2)
-ggplot(cars, aes(speed, dist)) + geom_point() + geom_smooth(method=lm, se=FALSE)
+ggplot(cars, aes(speed, dist)) + geom_point() + geom_smooth(method=lm, se=FALSE)  # se=TRUE
 ```
 By default, *geom_smooth* uses method LOESS (LOcal regrESSion). The estimator takes the form of 
 $$ f(x) = \beta_0(x) + \beta_1(x) x,$$

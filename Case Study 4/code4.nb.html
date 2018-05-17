@@ -211,12 +211,15 @@ color &lt;- 'red'</code></pre>
 </ul>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmF3WywubWVhbihnYWluKV1cblxuYGBgIn0= -->
-<pre class="r"><code>raw[,.mean(gain)]
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZGVuc2l0eSA8LSBleHByZXNzaW9uKCdEZW5zaXR5IChnL2NtJ14zKicpJylcbmdhaW4gPC0gJ0dhaW4nXG5jb2xvciA8LSAncmVkJ1xucGxvdChyYXckZGVuc2l0eSwgcmF3JGdhaW4sIG1haW49J0RlbnNpdHkgdnMuIEdhaW4nLCB4bGFiPWRlbnNpdHksIHlsYWI9Z2FpbiwgY29sPWNvbG9yKVxuXG5gYGAifQ== -->
+<pre class="r"><code>density &lt;- expression('Density (g/cm'^3*')')
+gain &lt;- 'Gain'
+color &lt;- 'red'
+plot(raw$density, raw$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gLm1lYW4oZ2FpbikgOiBjb3VsZCBub3QgZmluZCBmdW5jdGlvbiBcIi5tZWFuXCJcbiJ9 -->
-<pre><code>Error in .mean(gain) : could not find function &quot;.mean&quot;</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gcmF3JGRlbnNpdHkgOiBvYmplY3Qgb2YgdHlwZSAnY2xvc3VyZScgaXMgbm90IHN1YnNldHRhYmxlXG4ifQ== -->
+<pre><code>Error in raw$density : object of type 'closure' is not subsettable</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
