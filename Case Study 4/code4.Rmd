@@ -32,38 +32,34 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
+#average out the data for each x
+library(data.table)
+data_cleaned<-aggregate(gain ~density, raw, mean)
 # Plot raw data
 density <- expression('Density (g/cm'^3*')')
 gain <- 'Gain'
 color <- 'red'
 
-plot(raw$density, raw$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
-plot(raw$gain, raw$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+plot(data_cleaned$density, data_cleaned$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
+plot(data_cleaned$gain, data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
 
 density <- expression('log(Density) (g/cm'^3*')')
 
-plot(log(raw$gain), raw$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+plot(log(data_cleaned$gain), data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
 
-library(data.table)
-raw[,.mean(gain)]
-
-#average out the data for each x
-library(data.table)
-raw_cleaned<- raw[,.(mean(raw$gain)),by= .(raw$density)]
-correlation <-cor(raw$density,raw$gain)
 #least squares line
-fit<-lm(raw$gain~raw$density)
+fit<-lm(data_cleaned$gain~data_cleaned$density)
 summary(fit)
 #standardized residual
 fit.std<- rstandard(fit)
-plot(raw, 
+plot(data_cleaned, 
   	xlab="density", ylab="gain", 
    main="density vs gain")
 #plot(raw$gain,residual)
 abline(coefficients((fit)),lwd=2,lty=2,col="red")
 yfit<-fit$fitted.values
-resid<-raw$gain-yfit
-plot(raw$density,resid)
+resid<-data_cleaned$gain-yfit
+plot(data_cleaned$density,resid)
 #best fit line on a residual plot
 abline(0,0,col="red")
 #use qqplot to find the normality of residual
