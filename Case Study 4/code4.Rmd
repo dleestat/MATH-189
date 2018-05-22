@@ -32,6 +32,17 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
+# Plot raw data
+title <- 'Density vs. Gain'
+x.axis <- expression('Density (g/cm'^3*')')
+y.axis <- 'Gain'
+color <- 'red'
+
+plot(raw, main=title, xlab=x.axis, ylab=y.axis, col=color)
+
+# Average replicate measurements
+library(data.table)
+
 #average out the data for each x
 library(data.table)
 data_cleaned<-aggregate(gain ~density, raw, mean)
@@ -86,7 +97,7 @@ Ultimately we are interested in answering questions such as: Given a gain readin
 
 
 ## Scenario 3: Cross-Validation
-To check how well your procedure works, omit the set of measurements corresponding to the block of density 0.508, apply your "estimation"/calibration procedure to the remaining data, and provide an interval estiamte for the density of a block with an average reading of 38.6. Where does the actual density fall in the interval? Try the same test, for the set of measurements at the 0.001 density.
+To check how well your procedure works, omit the set of measurements corresponding to the block of density 0.508, apply your "estimation"/calibration procedure to the remaining data, and provide an interval estimate for the density of a block with an average reading of 38.6. Where does the actual density fall in the interval? Try the same test, for the set of measurements at the 0.001 density.
 ```{r}
 
 ```
