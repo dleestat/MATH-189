@@ -1,0 +1,146 @@
+---
+title: "Math 189/289 Lab 7"
+author: "Jiaqi Guo"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+# Data
+Today we are going to study linear regression using one of the available datasets in R. The dataset *cars* is taken from R package *datasets*. The dataframe is very straightforward. One column gives the speed of cars, and the other column reports the distances taken for the cars to stop.
+```{r}
+library(datasets)
+cars
+```
+
+There are 50 observations. Let's take a look at the scatter plot of the data. Notice that the simple command plot will plot the dataframe automatically for you. It also assumes that the second variable is assigned to the y-axis and the first variable is assigned to the x-axis. In this case, it happens that the distance needed for a car to stop is our variable of interest. Having *dist* on the y-axis as the response seems to be a good choice.
+```{r}
+plot(cars)
+```
+
+Clearly, there is a positive correlation between *dist* and *speed*. Intuitively, this also makes sense, as the faster one drives, the longer the distances required to bring the car to a full stop.
+
+# Linear Regression
+Here we are going to consider a least squares fit of the data. Please keep in mind that least squares is not the only option for regression. Least squares solution minimizes the sum of squared distances from the data points to the linear fit, whereas there is also the option to minimzes the sum of absolute distances for example.
+
+Rather than hand-computing the least squares solution, we will utilize one of the most popular functions in R, *lm()* function. The main argument of the function is the first argument *formula*. It should be provided in the form y ~ x, where y is the response and x is the explanatory variable.
+```{r}
+fit <- lm(formula=dist~speed, data=cars)  # lm(formula=cars$dist~cars$speed)
+fit
+```
+
+As we see from the output of the linear model fit, the coefficients, intercept and slope, are both calculated already. Let's take a look at the scatter plot again with the least squares fit.
+```{r}
+plot(cars)
+abline(fit, col="red")
+```
+
+There are some obvious issues that one might see from this fit. For example, the intercept is negative. The logical intercept is at zero, since a car with speed zero should require zero distance to stop. (The speed and distance here follow the common understanding people share in daily conversations, not the rigorous ones presented in a physics class.) However, data is not perfect, there are always errors that come into play. 
+
+# Diagnostics
+Three characteristics have been mentioned in the lecture slides, linearity, residual normality, and constant variability. We first check linearity. For linearity, we usually check for the scatter plot and the residual plot. We will take a look at the residual plot.
+```{r}
+plot(fit$residuals)
+abline(0, 0, col="red")
+```
+
+As linearity has been checked, we move on to residual normality. Let's take a look at the histogram and the Q-Q plots of the residuals.
+```{r}
+hist(fit$residuals)
+qqnorm(fit$residuals)
+qqline(fit$residuals, col="red")
+```
+The Q-Q plot does indicate that the data points with large deviations away from the theoretical quantile line may be outliers. But this may also be due to the small sample size we have, as the dataset only consists of 50 observations.
+
+Last but not the least, we will check for the constant variability. Usually, this is verified by examining the residual plot. A fan shape in the residual plot indicates heteroscedacity (unequal variance). 
+```{r}
+plot(fit$residuals)
+abline(0, 0, col="red")
+```
+
+In addition, one may want to identify outliers within the dataset. For instance, we had doubt about the data points with fit residuals largely deviating from the theoretical Q-Q line. Let's figure out which data points these residuals correspond to.
+```{r}
+res.rank <- sort(fit$residuals)
+suspect <- which(fit$residuals %in% res.rank[47:50])
+```
+
+Let's see how different the linear fit is, if we remove these points. The red line is the original fit, whereas the blue line is the fit with the two points removed.
+```{r}
+plot(cars)
+abline(fit, col="red")
+fit.out <- lm(formula=dist[-suspect]~speed[-suspect], data=cars)
+abline(fit.out, col="blue")
+```
+
+We do notice that the blue line has been tilted downward from the red line, and we do have a slightly better intercept. One may consider the two points as influential points, as they influence the slope and can be understood as outliers in response. 
+
+There are more rigorous procedures, such as various testing methods, to detect outliers in both response and the exploratory variables. However, they are out the scope of this class. We might talk about them later on.
+
+# More Details on Linear Regression
+One of the most important measure in evaluating the linear fit of the data is through $R^2$, which is the squared correlation coefficient. It is formally defined as 
+$$R^2 = \frac{SSE_{reg}}{SSE_{total}}, $$
+where $SSE_{reg} = \sum_{i=1}^n (\hat y_i - y_i)^2$ and $SSE_{total} = \sum_{i=1}^n (y_i - \bar y)^2$, $\hat y_i$ being the fitted values using the fitted linear model and $\bar y$ being the mean of the response. This is understood as the fraction of variability explained by the regression model.
+
+Let's try to calculate this using the linear model we fitted earlier. 
+```{r}
+R.square <- sum((fit$fitted.values-mean(cars$dist))^2) / (sum((cars$dist - mean(cars$dist))^2))
+R.square
+```
+
+As this number is used so often, one does not have to calculate this every time by hand. $R^2$ information can be found using the *summary()* function for *lm()* fits.
+```{r}
+summary(fit)
+```
+
+Usually, a larger $R^2$ value means a larger proportion of the variation has been explained by the regression model, which seems very promising. However, a not of warning, $R^2$ must be compared on the same level of model complexity. For example, one can fit the response in a linear model perfectly, if one can have arbitrary number of explanatory variables. In such cases, $R^2$ value will be at its maximum possible value, which is 1. However, such a fitted model is not helpful, as it will not be able to predict unseen data well.
+
+The *summary()* function actually provides much more information than merely $R^2$. In fact, it contains the testing information under the coefficients.
+
+Denote the intercept coefficient as $\beta_0$ and the speed coefficient as $\beta_1$. The two lines regarding testing in the summary refer to the following two tests. The first line tests $H_0: \beta_0 = 0$ against $H_1: \beta_0 \neq 0$. The second line tests $H_0: \beta_1 = 0$ against $H_1: \beta_1 \neq 0$.
+
+If we further denote the estimates as $\hat \beta_0$ and $\hat \beta_1$, and the standard errors as $\sigma_0$ and $\sigma_1$. The test statistics respectively are 
+$$\frac{\hat \beta_i - 0}{\sigma_i} \sim T_{n - 2},$$
+where $i = 0 \text{ or } 1$.
+
+# Weighted Least Squares
+When homoskedasticity is in doubt, weighted least squares offer an alternative to the plain least squares. In plain least squares, we solve the optimization
+$$\min_{\beta} \sum_{i=1}^n (y_i - x_i \beta)^2,$$
+whereas in weighted least squares the optimization becomes
+$$\min_{\beta} \sum_{i=1}^n w_i (y_i - x_i \beta)^2.$$
+It can be shown that choosing weights proportional to $1/\sigma_i^2$ is optimal, and results in the smallest standard errors. Given the fitted and residual plots earlier, there is an indication of unequal variances. We try to fit weighted least squares for the dataset.
+```{r}
+w <- 1/cars$speed
+fit.wls <- lm(dist~speed, data=cars, weights=w)
+plot(cars)
+abline(fit, col="red")
+abline(fit.wls, col="blue")
+```
+
+# *geom_smooth* Function
+It is necessary to install the package, which this function comes from. 
+```{r}
+install.packages("ggplot2")
+```
+*ggplot2* is a popular visualization package in *R*. We encourage you to explore more when you get a chance. We will first see an example of how *geom_smooth* can help visualize the linear model fit.
+```{r}
+library(ggplot2)
+ggplot(cars, aes(speed, dist)) + geom_point() + geom_smooth(method=lm, se=FALSE)  # se=TRUE
+```
+By default, *geom_smooth* uses method LOESS (LOcal regrESSion). The estimator takes the form of 
+$$ f(x) = \beta_0(x) + \beta_1(x) x,$$
+where $\beta_0(x)$ and $\beta_1(x)$ are estimated through the optimization
+$$\min_{\beta_0, \beta_1} \sum_{i=1}^n K(x, x_i) \left[ y_i - \beta_0 - \beta_1 x_i \right]^2,$$
+where $K(\cdot)$ is a kernel function. It can be seen as a weighting scheme on the data points. Note that estimators of $\beta_0$ and $\beta_1$ depends on $x$.
+```{r}
+library(ggplot2)
+ggplot(cars, aes(speed, dist)) + geom_point() + geom_smooth(se=FALSE)
+```
+There are many choices for a kernel function. A kernel function $K(\cdot)$ need to satisfy two requirements, $K(u) = K(-u)$ for all $u$ and 
+$$\int_{-\infty}^{\infty} K(u) du = 1.$$
+Popular choices include:
+
+* Uniform, $K(u) = \frac{1}{2}$, for $|u| \leq 1$
+* Epanechnikov, $K(u) = \frac{3}{4}(1 - u^2)$, for $|u| \leq 1$
+* Biweight, $K(u) = \frac{15}{16}(1 - u^2)^2$, for $|u| \leq 1$
+* Tricubic, $K(u) = \frac{70}{81}(1 - |u|^3)^3$, for $|u| \leq 1$
+* Gaussian, $K(u) = \frac{1}{\sqrt{2\pi}} \exp \left(-\frac{1}{2} u^2\right)$

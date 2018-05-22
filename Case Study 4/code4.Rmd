@@ -6,7 +6,7 @@ output: html_notebook
 This study allows us to revisit/renew
 
 1. Regression modeling
-2. Properties of Least Squares/Fitting ???a line???
+2. Properties of Least Squares/Fitting "a line"
 3. Multiple observation
 
 Datasets for this study are
@@ -21,8 +21,7 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 
 ## Setup
 ```{r}
-data <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
-head(data)
+raw <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
 ```
 
 
@@ -33,21 +32,34 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
+#average out the data for each x
+library(data.table)
+data_cleaned<-aggregate(gain ~density, raw, mean)
+# Plot raw data
+density <- expression('Density (g/cm'^3*')')
+gain <- 'Gain'
+color <- 'red'
 
-correlation <-cor(data$density,data$gain)
+plot(data_cleaned$density, data_cleaned$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
+plot(data_cleaned$gain, data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+
+density <- expression('log(Density) (g/cm'^3*')')
+
+plot(log(data_cleaned$gain), data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+
 #least squares line
-fit<-lm(data$gain~data$density)
+fit<-lm(data_cleaned$gain~data_cleaned$density)
 summary(fit)
 #standardized residual
 fit.std<- rstandard(fit)
-plot(data, 
+plot(data_cleaned, 
   	xlab="density", ylab="gain", 
    main="density vs gain")
-#plot(data$gain,residual)
+#plot(raw$gain,residual)
 abline(coefficients((fit)),lwd=2,lty=2,col="red")
 yfit<-fit$fitted.values
-resid<-data$gain-yfit
-plot(data$density,resid)
+resid<-data_cleaned$gain-yfit
+plot(data_cleaned$density,resid)
 #best fit line on a residual plot
 abline(0,0,col="red")
 #use qqplot to find the normality of residual
@@ -61,8 +73,6 @@ curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
 lines(density(fit.std),col="red")
 #add caption
 legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
-
-
 ```
 
 
