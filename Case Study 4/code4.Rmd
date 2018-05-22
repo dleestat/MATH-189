@@ -21,7 +21,10 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 
 ## Setup
 ```{r}
-raw <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
+df <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
+
+#install.packages('L1pack')
+library(L1pack)
 ```
 
 
@@ -36,27 +39,27 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 title <- 'Density vs. Gain'
 x.axis <- expression('Density (g/cm'^3*')')
 y.axis <- 'Gain'
-color <- 'red'
+plot(df, main=title, xlab=x.axis, ylab=y.axis)
 
-plot(raw, main=title, xlab=x.axis, ylab=y.axis, col=color)
+
+# Take log transformation of response variable (gain)
+y.log.axis = 'log(Gain)'
+df.log = data.frame(df['density'], log(df['gain']))
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
+
 
 # Average replicate measurements
-library(data.table)
+df.log.avg = aggregate(list(gain=df.log$gain), by=list(density=df.log$density), FUN=mean)
+plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
 
-#average out the data for each x
-library(data.table)
-data_cleaned<-aggregate(gain ~density, raw, mean)
-# Plot raw data
-density <- expression('Density (g/cm'^3*')')
-gain <- 'Gain'
-color <- 'red'
 
-plot(data_cleaned$density, data_cleaned$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
-plot(data_cleaned$gain, data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
+# Fit gain to density
+plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+least.squares <- lm(formula=gain~density, data=df.log.avg)
+least.absolute.deviations <- lad(formula=gain~density, data=df.log.avg)
+abline(least.squares, col='red')
+abline(least.absolute.deviations, col='blue')
 
-density <- expression('log(Density) (g/cm'^3*')')
-
-plot(log(data_cleaned$gain), data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
 
 #least squares line
 fit<-lm(data_cleaned$gain~data_cleaned$density)
