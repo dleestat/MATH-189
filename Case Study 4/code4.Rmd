@@ -94,6 +94,63 @@ Ultimately we are interested in answering questions such as: Given a gain readin
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
 ```{r}
+library(ggplot2)
+# Least Square b0 and b1 value
+b1 <-  as.numeric(coefficients((least.squares))[2])
+b0 <-  as.numeric(coefficients((least.squares))[1])
+
+# Function to use gain to predict density 
+ls.regression <- function(gain){
+  log.gain <-  log(gain)
+  estimated.density <-  (log.gain - b0) / b1;
+  return(estimated.density);
+}
+
+# Estimates for density
+density.1 <- ls.regression(38.6)
+density.2 <- ls.regression(426.7)
+
+# Graph for Bands for two estimates
+ggplot(df.log.avg,aes(x=density, y=gain)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')+geom_point() +
+  geom_point(aes(x=0.508, y=3.65745), colour="yellow") 
+
+ggplot(df.log.avg,aes(x=density, y=gain)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')+geom_point() +
+  geom_point(aes(x=0.508, y=3.65745), colour="yellow") +
+  geom_point()+geom_point(aes(x=0.001, y=5.99266), colour="red")
+
+# Construct Confidence Interval for density = 0.508
+new.data <- data.frame(density = 0.508)
+log_prediction = predict(least.squares, new.data, interval="confidence")
+log_prediction
+prediction <- exp(log_prediction)
+prediction
+# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 38.76. The confidence interval of (36.296, 41.3963) signifies the range in which the true population parameter lies at a 95% level of confidence.
+
+# Construct Prediction Interval for density = 0.508
+log_prediction = predict(least.squares, new.data, interval="prediction")
+log_prediction
+prediction <- exp(log_prediction)
+prediction
+# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 38.76. The prediction interval is (32.7544, 45.87231).
+
+# Construct Confidence Interval for density = 0.001
+new.data <- data.frame(density = 0.001)
+log_prediction = predict(least.squares, new.data, interval="confidence")
+log_prediction
+prediction <- exp(log_prediction)
+prediction
+# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 400.4783. The confidence interval of (365.3647, 438.9665) signifies the range in which the true population parameter lies at a 95% level of confidence.
+
+# Construct Prediction Interval for density = 0.001
+log_prediction = predict(least.squares, new.data, interval="prediction")
+log_prediction
+prediction <- exp(log_prediction)
+prediction
+# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 400.4783. The prediction interval is (334.4508, 479.541).
 
 ```
 
@@ -154,9 +211,5 @@ lines(density(fit.std),col="red")
 #add caption
 legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
 
-# Relationship between Lat and Ts
-#table.2 <- table.total[,c('Lat','Ts')]
-#table.2 <- table.2[which(table.2$Ts>-200),]
-#plot(table.2)
 
 ```
