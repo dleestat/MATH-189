@@ -16,12 +16,15 @@ Datasets for this study are
 
 
 ## Question
-The aim of this lab is to provide a simple procedure for converting gain into density when the gauge is in operation. Keep in mind that the experiment was conducted by varying density and measuring the response in gain, but when the gauge is ultimately in use, the snow-pack density is to be estimated from the measured gain
+The aim of this lab is to provide a simple procedure for converting gain into density when the gauge is in operation. Keep in mind that the experiment was conducted by varying density and measuring the response in gain, but when the gauge is ultimately in use, the snow-pack density is to be estimated from the measured gain.
 
 
 ## Setup
 ```{r}
-raw <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
+df <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
+
+#install.packages('L1pack')
+library(L1pack)  # Used for least absolute deviations regression line
 ```
 
 
@@ -32,47 +35,57 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
 * What if the blocks of polyethylene were not measured in random order?
 ```{r}
-#average out the data for each x
-library(data.table)
-data_cleaned<-aggregate(gain ~density, raw, mean)
 # Plot raw data
-density <- expression('Density (g/cm'^3*')')
-gain <- 'Gain'
-color <- 'red'
+title <- 'Density vs. Gain'
+x.axis <- expression('Density (g/cm'^3*')')
+y.axis <- 'Gain'
+plot(df, main=title, xlab=x.axis, ylab=y.axis)
 
-plot(data_cleaned$density, data_cleaned$gain, main='Density vs. Gain', xlab=density, ylab=gain, col=color)
-plot(data_cleaned$gain, data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
 
-density <- expression('log(Density) (g/cm'^3*')')
+# Take log transformation of response variable (gain)
+y.log.axis = 'log(Gain)'
+df.log = data.frame(df['density'], log(df['gain']))
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
 
-plot(log(data_cleaned$gain), data_cleaned$density, main='Gain vs. Density', xlab=gain, ylab=density, col=color)
 
-#least squares line
-fit<-lm(data_cleaned$gain~data_cleaned$density)
-summary(fit)
-#standardized residual
-fit.std<- rstandard(fit)
-plot(data_cleaned, 
-  	xlab="density", ylab="gain", 
-   main="density vs gain")
-#plot(raw$gain,residual)
-abline(coefficients((fit)),lwd=2,lty=2,col="red")
-yfit<-fit$fitted.values
-resid<-data_cleaned$gain-yfit
-plot(data_cleaned$density,resid)
-#best fit line on a residual plot
-abline(0,0,col="red")
-#use qqplot to find the normality of residual
-qqnorm(fit.std,ylab="Standardized Residuals",xlab="density")
-qqline(fit.std)
-#histogram for residuals
-hist(xlab = "standard residuals",fit.std, main="histogram of residuals",prob=TRUE)
-#normal curve
-curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
-#empirical curve
-lines(density(fit.std),col="red")
-#add caption
-legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
+# Average replicate measurements
+df.log.avg = aggregate(list(gain=df.log$gain), by=list(density=df.log$density), FUN=mean)
+plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+
+
+# Fit gain to density
+cor(df.log.avg)
+
+least.squares <- lm(formula=gain~density, data=df.log.avg)
+least.absolute.deviations <- lad(formula=gain~density, data=df.log.avg)
+
+plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+abline(least.squares, col='red')
+abline(least.absolute.deviations, col='blue')
+legend('topright', legend=c('Least Squares', 'Least Absolute Deviations'), col=c('red', 'blue'), lty=1);
+
+least.squares
+summary(least.squares)
+least.absolute.deviations
+summary(least.absolute.deviations)
+
+
+# Check conditions for linear regression: linearity, normality of residuals, constant variability
+title.residuals1 <- 'Residuals of Least Squares Regression Line'
+title.residuals2 <- 'Residuals of Least Absolute Deviations Regression Line'
+plot(least.squares$residuals, main=title.residuals1, ylab=y.axis)
+abline(0, 0, col='red')
+plot(least.absolute.deviations$residuals, main=title.residuals2, ylab=y.axis)
+abline(0, 0, col='blue')
+
+num.bins <- 10
+hist(least.squares$residuals, breaks=num.bins, main=title.residuals1, xlab=y.axis, col='red')
+hist(least.absolute.deviations$residuals, breaks=num.bins, main=title.residuals2, xlab=y.axis, col='blue')
+
+qqnorm(least.squares$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
+qqline(least.squares$residuals, col='red')
+qqnorm(least.absolute.deviations$residuals, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
+qqline(least.absolute.deviations$residuals, col='blue')
 ```
 
 
@@ -86,7 +99,7 @@ Ultimately we are interested in answering questions such as: Given a gain readin
 
 
 ## Scenario 3: Cross-Validation
-To check how well your procedure works, omit the set of measurements corresponding to the block of density 0.508, apply your "estimation"/calibration procedure to the remaining data, and provide an interval estiamte for the density of a block with an average reading of 38.6. Where does the actual density fall in the interval? Try the same test, for the set of measurements at the 0.001 density.
+To check how well your procedure works, omit the set of measurements corresponding to the block of density 0.508, apply your "estimation"/calibration procedure to the remaining data, and provide an interval estimate for the density of a block with an average reading of 38.6. Where does the actual density fall in the interval? Try the same test, for the set of measurements at the 0.001 density.
 ```{r}
 
 ```
