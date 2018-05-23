@@ -185,6 +185,7 @@ corr_matrix
 # least squares line
 fit<-lm(formula = Ts ~ DOY + Lat, data = data)
 summary(fit)
+<<<<<<< HEAD
 
 ggplot(data,aes(x=DOY, y=Ts)) + 
   geom_point(color='#2980B9', size = 4) + 
@@ -205,6 +206,28 @@ qqnorm(fit$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.
 qqline(fit$residuals, col='red')
 ```
 
+=======
+
+ggplot(data,aes(x=DOY, y=Ts)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')
+
+ggplot(data,aes(x=Lat, y=Ts)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')
+
+title.residuals1 <- 'Residuals of Least Squares Regression Line'
+plot(fit$residuals, main=title.residuals1)
+abline(0, 0, col='red')
+
+num.bins <- 10
+hist(fit$residuals, breaks=num.bins, main=title.residuals1, xlab='Temperature', col='red')
+
+qqnorm(fit$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
+qqline(fit$residuals, col='red')
+```
+
+>>>>>>> 3bcc1630ab9161919ca3d2da1cf997fa8983d8fa
 ```{r}
 # Attempt for Multiple Regressions
 data$Midnights <- 0
