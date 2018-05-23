@@ -16,7 +16,7 @@ Datasets for this study are
 
 
 ## Question
-The aim of this lab is to provide a simple procedure for converting gain into density when the gauge is in operation. Keep in mind that the experiment was conducted by varying density and measuring the response in gain, but when the gauge is ultimately in use, the snow-pack density is to be estimated from the measured gain
+The aim of this lab is to provide a simple procedure for converting gain into density when the gauge is in operation. Keep in mind that the experiment was conducted by varying density and measuring the response in gain, but when the gauge is ultimately in use, the snow-pack density is to be estimated from the measured gain.
 
 
 ## Setup
@@ -24,7 +24,7 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 df <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
 
 #install.packages('L1pack')
-library(L1pack)
+library(L1pack)  # Used for least absolute deviations regression line
 ```
 
 
@@ -82,18 +82,10 @@ num.bins <- 10
 hist(least.squares$residuals, breaks=num.bins, main=title.residuals1, xlab=y.axis, col='red')
 hist(least.absolute.deviations$residuals, breaks=num.bins, main=title.residuals2, xlab=y.axis, col='blue')
 
-
-#use qqplot to find the normality of residual
-qqnorm(fit.std,ylab="Standardized Residuals",xlab="density")
-qqline(fit.std)
-#histogram for residuals
-hist(xlab = "standard residuals",fit.std, main="histogram of residuals",prob=TRUE)
-#normal curve
-curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
-#empirical curve
-lines(density(fit.std),col="red")
-#add caption
-legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
+qqnorm(least.squares$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
+qqline(least.squares$residuals, col='red')
+qqnorm(least.absolute.deviations$residuals, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
+qqline(least.absolute.deviations$residuals, col='blue')
 ```
 
 
