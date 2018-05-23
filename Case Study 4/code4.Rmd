@@ -97,10 +97,11 @@ TODO Description.
 
 Is it possible to run linear regression
 ```{r}
-
 temp.1 <- read.csv('Full Resolution Data/145846.csv', header=TRUE)
 temp.1 <- temp.1[,c('Hour','DOY','POS_DOY','Lat','Lon','Ts')]
 temp.1 <- as.matrix(temp.1)
+
+# Correlation Matrix
 matrix.1 <- cor(temp.1)
 matrix.1
 
@@ -108,17 +109,41 @@ table.total <- read.csv('Full Resolution Data/145846.csv', header=TRUE)
 
 # Relationship between DOY and Ts from 10:00PM to 12:00AM
 table.1 <- table.total[,c('DOY','Ts','Hour')]
-table.1 <- table.1[which(table.1$Ts>-200 & table.1$Hour>22),]
-fit <- lm(table.1$DOY ~ table.1$Ts)
+table.1 <- table.1[which(table.1$Ts>-200 & table.1$Hour>21),]
+table.1 <- table.1[,c('DOY','Ts')]
+
+# least squares line
+fit<-lm(table.1$Ts~table.1$DOY)
+summary(fit)
+
+# Plot the data
+plot(table.1, xlab="DOY", ylab="Ts", main="DOY vs Ts")
+abline(coefficients((fit)),col="red")
+
+#standardized residual
+fit.std<- rstandard(fit)
 yfit <- fit$fitted.values
-#plot(table.1$Ts,fit$residuals)
-plot(table.1$DOY, table.1$Ts)
-abline(coefficients((fit)),lwd=2,lty=2,col="red")
+resid<-table.1$Ts-yfit
+plot(table.1$DOY,resid)
+#best fit line on a residual plot
+abline(0,0,col="red")
+
+#use qqplot to find the normality of residual
+qqnorm(fit.std,ylab="Standardized Residuals",xlab="Theoretical")
+qqline(fit.std)
+
+#histogram for residuals
+hist(xlab = "standard residuals",fit.std, main="histogram of residuals",prob=TRUE)
+#normal curve
+curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
+#empirical curve
+lines(density(fit.std),col="red")
+#add caption
+legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
 
 # Relationship between Lat and Ts
 #table.2 <- table.total[,c('Lat','Ts')]
 #table.2 <- table.2[which(table.2$Ts>-200),]
 #plot(table.2)
-
 
 ```
