@@ -162,54 +162,48 @@ To check how well your procedure works, omit the set of measurements correspondi
 ```
 
 
-## Additional Scenario: TODO Title
-TODO Description.
-
-Is it possible to run linear regression
+## Additional Scenario: 
+Use the additional dataset to construct a model fitting temperature with DOY, latitude, and other reasonable features. Try sketching the least squares line on a scatter plot. We aim to investigate the relationship between temperature and the DOY, and its Latitude.
 ```{r}
-temp.1 <- read.csv('Full Resolution Data/145846.csv', header=TRUE)
-temp.1 <- temp.1[,c('Hour','DOY','POS_DOY','Lat','Lon','Ts')]
-temp.1 <- as.matrix(temp.1)
+# Check the correlation
+data <- read.csv('Full Resolution Data/64506420.csv', header=TRUE)
+data <- data[,c('Hour','DOY','POS_DOY','Lat','Lon','Ts','BP')]
+
+# Drop the extreme outlier case
+#data <- data[which(data$Ts>-200),]
+data_matrix <- as.matrix(data)
 
 # Correlation Matrix
-matrix.1 <- cor(temp.1)
-matrix.1
-
-table.total <- read.csv('Full Resolution Data/145846.csv', header=TRUE)
-
+corr_matrix <- cor(data_matrix)
+corr_matrix
+```
+```{r}
 # Relationship between DOY and Ts from 10:00PM to 12:00AM
-table.1 <- table.total[,c('DOY','Ts','Hour')]
-table.1 <- table.1[which(table.1$Ts>-200 & table.1$Hour>21),]
-table.1 <- table.1[,c('DOY','Ts')]
+#data <- data[,c('DOY','Ts','Hour','Hours_ind')]
 
 # least squares line
-fit<-lm(table.1$Ts~table.1$DOY)
+fit<-lm(formula = Ts ~ DOY + Lat, data = data)
 summary(fit)
 
-# Plot the data
-plot(table.1, xlab="DOY", ylab="Ts", main="DOY vs Ts")
-abline(coefficients((fit)),col="red")
+ggplot(data,aes(x=DOY, y=Ts)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')
+ggplot(data,aes(x=Lat, y=Ts)) + 
+  geom_point(color='#2980B9', size = 4) + 
+  geom_smooth(method=lm, color='#2C3E50')
 
-#standardized residual
-fit.std<- rstandard(fit)
-yfit <- fit$fitted.values
-resid<-table.1$Ts-yfit
-plot(table.1$DOY,resid)
-#best fit line on a residual plot
-abline(0,0,col="red")
+```
 
-#use qqplot to find the normality of residual
-qqnorm(fit.std,ylab="Standardized Residuals",xlab="Theoretical")
-qqline(fit.std)
-
-#histogram for residuals
-hist(xlab = "standard residuals",fit.std, main="histogram of residuals",prob=TRUE)
-#normal curve
-curve(dnorm(x, mean=mean(fit.std), sd=sd(fit.std)), add=TRUE,col="blue")
-#empirical curve
-lines(density(fit.std),col="red")
-#add caption
-legend("topright",legend=c("empirical curve","normal curve"),col=c("red","blue"),lty=1:1, cex=1)
-
-
+```{r}
+# Attempt for linear Regression
+data$Midnights <- 0
+data$Midnights[which(data$Hour<6)] <- 1
+data$Mornings <- 0
+data$Mornings[which(data$Hour>=6 & data$Hour<11)] <- 1 
+data$Noon <- 0
+data$Noon[which(data$Hour>=11 & data$Hour<15)] <- 1
+data$Afternoon <- 0
+data$Afternoon[which(data$Hour>=15 & data$Hour<20)] <- 1
+data$Nights <- 0
+data$Nights[which(data$Hour>=20)] <- 1
 ```
