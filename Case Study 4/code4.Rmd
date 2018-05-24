@@ -56,8 +56,8 @@ plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
 # Fit gain to density
 cor(df.log.avg)
 
-least.squares <- lm(formula=gain~density, data=df.log.avg)
-least.absolute.deviations <- lad(formula=gain~density, data=df.log.avg)
+least.squares <- lm(gain~density, data=df.log.avg)
+least.absolute.deviations <- lad(gain~density, data=df.log.avg)
 
 plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
@@ -86,6 +86,12 @@ qqnorm(least.squares$residuals, main=paste('Normal Q-Q Plot with', title.residua
 qqline(least.squares$residuals, col='red')
 qqnorm(least.absolute.deviations$residuals, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
 qqline(least.absolute.deviations$residuals, col='blue')
+
+# If the densities of the polyethylene blocks were not reported exactly, not only would we not know the density of our snow, our explanatory variable, but we could also retrieve inaccurate data for the gain from the photons. It is possible that if the density of the snow was not properly reported, our whole data set would be flawed and we could arrive at a calibration procedure different from what we would have wanted.
+
+# Since the blocks themselves were in random locations, therefore if the measurement were not taken randomly, then it might happen that the measurements might be taken in a only specific area and thus causing bias.
+
+# If the blocks of polyethylene were not measured in random order, there could be a dependence on the measurements of the snow densities, and our data would not be i.i.d. If we handpicked which blocks to measure or picked them in a predetermined order, the density of the snow blocks could influence how the gain was recorded for each block of snow and also produce inaccurate results.
 ```
 
 
@@ -93,6 +99,11 @@ qqline(least.absolute.deviations$residuals, col='blue')
 Ultimately we are interested in answering questions such as: Given a gain reading of 38.6, what is the density of the snow-pack? Given a gain reading of 426.7, what is the density of the snow-pack? These two numeric values, 38.6 and 426.7, were chosen because they are the average gains for the 0.508 and 0.001 densities, respectively.
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
+
+```{r}
+pred.int =  predict(least.squares, interval="prediction", level=.95)
+plot(pred.int)
+```
 
 ```{r}
 library(ggplot2)
@@ -203,7 +214,7 @@ To check how well your procedure works, omit the set of measurements correspondi
 ```
 
 
-## Additional Scenario: 
+## Additional Scenario: TODO Title
 Use the additional dataset to construct a model fitting temperature with DOY, latitude, and other reasonable features. Try sketching the least squares line on a scatter plot. We aim to investigate the relationship between temperature and the DOY, and its Latitude.
 ```{r}
 # Check the correlation

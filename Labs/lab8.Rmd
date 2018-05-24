@@ -1,0 +1,143 @@
+---
+title: "Math 189/289 Lab 8"
+author: "Alex Hanbo Li"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+\DeclareMathOperator{\sign}{sign}
+
+
+# Quantiles
+Any real-valued random variable $X$ can be characterized by its distributuion function
+$F(x) = \mathbb{P}(X \leq x)$. Then we call, for any $\tau \in (0, 1)$, 
+$F^{-1}(\tau) = \inf\{ x: F(x) \geq \tau \}$ the $\tau$-th quantile of $X$.
+For example, $F^{-1}(1/2)$ stands for the median. In another word,
+$\mathbb{P}(X \leq F^{-1}(\tau)) = \tau$, that is, the chance the random variable is less than $F^{-1}(\tau)$ is $\tau$.
+
+## Median and absolute deviation loss
+In order to get the median of a random variable $X$, we can minimize the expected absolute deviation
+$$\min_{\lambda} \mathbb{E} \left[ \frac{1}{2}|X - \lambda|\right].$$
+It is more intuitive to look at the first order condition:
+$$
+\mathbb{E} \left[ \frac{1}{2}\sign(\lambda - X)\right] = 0.
+$$
+The sign function means $\sign(a) = 1$ if $a > 0$, $\sign(a) = -1$ if $a < 0$ and
+$\sign(a) = 0$ if $a = 0$.
+Therefore, we can rewrite the above equation as:
+$$\mathbb{P}(X \leq \lambda) - \mathbb{P}(X > \lambda) = 0.$$
+It is clear that the minimizer $\lambda$ is the median of $X$.
+Now suppose we have $n$ observations $\{X_1, \cdots, X_n\}$, then we can find the sample median by
+minimizing the empirical expectation
+$$ \min_{\lambda} \frac{1}{n} \sum_{i=1}^n  |X_i - \lambda|.$$
+Similarly, the first order condition (estimating equation) is:
+$$ \frac{1}{n} \sum_{i=1}^n \sign(\lambda - X_i) = 0.$$
+This agrees with the way we learned to calculate median before. The above equation means there should be equal number of observations on each side of $\lambda$.
+
+**Take-away message**: we can transfer the problem of finding the median to a regression problem.
+
+```{r}
+x <- seq(-5,5,length.out = 1000)
+plot(x, 0.5*abs(x), type = "l", ylab = "absolute deviation loss")
+```
+
+## Quantiles and quantile regression
+Similarly, we an find all quantile information by minimizing another empirical quantity. If we think about the first order equation for the median
+$$
+\mathbb{E} \left[ \frac{1}{2}\sign(\lambda - X)\right] = 0,
+$$
+it means when $X > \lambda$, the contribution of $X$ is $-1/2$, and when $X < \lambda$, the contribution of $X$ is $1/2$. Because of this equal contribution, we want to find a $\lambda$ with $X$ distributed symmetrically around it. In another word, 
+$$\frac{1}{2}\mathbb{P}(X \leq \lambda) - \frac{1}{2}\mathbb{P}(X > \lambda) = 0.$$
+
+So if we want to find a general $\tau$-th quantile instead, we basically want to find a $\lambda$ such that $\mathbb{P}(X \leq \lambda) = \tau$. Then $\mathbb{P}(X > \lambda) = 1 - \tau$, and
+$$(1-\tau)\mathbb{P}(X \leq \lambda) - \tau\mathbb{P}(X > \lambda) = 0.$$
+
+Integrating this equation, we get the minimization problem
+$$\min_{\lambda} \mathbb{E} \rho_{\tau}(X - \lambda),$$
+where
+$$\rho_{\tau}(a) =
+\begin{cases}
+a \tau & \text{if} a > 0 \\
+a (\tau - 1) & \text{if} a \leq 0.
+\end{cases}$$
+We call $\rho_{\tau}(a)$ the $\tau$-th quantile loss function.
+
+```{r}
+x <- seq(-5,5,length.out = 1000)
+quantile_loss <- function(x, tau) {
+  ind <- 1*(x < 0)
+  return (x*(tau - ind))
+}
+plot(x, quantile_loss(x, 0.2), type = "l", lty = 1, col = 1, ylab = "quantile loss")
+lines(x, quantile_loss(x, 0.4), lty = 2, col = 2)
+lines(x, quantile_loss(x, 0.5), lty = 3, col = 3, lwd = 5)
+lines(x, quantile_loss(x, 0.6), lty = 4, col = 4)
+lines(x, quantile_loss(x, 0.8), lty = 5, col = 5)
+legend(x = 0, y = 4, legend = c(expression(paste(rho, "=", 0.2)),
+                                expression(paste(rho, "=", 0.4)),
+                                expression(paste(rho, "=", 0.5)),
+                                expression(paste(rho, "=", 0.6)),
+                                expression(paste(rho, "=", 0.8))),
+       lty = c(1,2,3,4,5), lwd = c(1,1,5,1,1), col = c(1,2,3,4,5))
+```
+## Quantile model
+In the previous section, we have learned how to calculate quantiles of a sample by minimizing the empirical quantile risk. Sometimes we do not only care about the quantile for the whole data set, but also want to know the quantiles at each location. Therefore, we model the $\tau$-th quantiles as:
+$$Q(\tau|X_i) = X_i^\top \beta(\tau),$$
+that is, at different location $X_i$, we have different quantile for the response $Y_i$.
+You can compare this model with the linear regression model
+$$\mathbb{E}[Y_i|X_i] = X_i^{\top} \beta,$$
+where we assume the conditional mean is a linear function of location $X_i$. Recall the linear regression
+$$\min_{\beta} \frac{1}{n} \sum_{i=1}^n (Y_i - X_i^\top \beta)^2.$$ Similarly, we have the quantile regression
+$$\min_{\beta} \frac{1}{n} \sum_{i=1}^n \rho_{\tau}(Y_i - X_i^\top \beta).$$
+
+## R functions
+### Sample quantiles
+```{r}
+x <- rnorm(100)
+quantile(x, probs = seq(0.1, 0.9, by = 0.2))
+```
+
+### Quantile regression
+```{r}
+install.packages("quantreg")
+library(quantreg)
+```
+
+```{r}
+x <- seq(2,10,length.out = 1000)
+y <- x + x*rnorm(1000)
+plot(x, y, pch = ".", ylim = c(-20, 40))
+
+# median
+fit1 <- rq(y ~ x, tau = 0.5)
+abline(fit1, col = 2)
+
+# true median
+true1 <- x
+lines(x, true1, col = 2, lty = 3)
+
+# 0.2 quantile
+fit2 <- rq(y ~ x, tau = 0.2)
+abline(fit2, col = 3)
+
+# true 0.2 quantile
+true2 <- qnorm(p = 0.2, mean = x, sd = x)
+lines(x, true2, col = 3, lty = 3)
+
+# 0.7 quantile
+fit3 <- rq(y ~ x, tau = 0.7)
+abline(fit3, col = 4)
+
+# true 0.7 quantile
+true3 <- qnorm(p = 0.7, mean = x, sd = x)
+lines(x, true3, col = 4, lty = 3)
+
+legend(x = 2, y = 40, legend = c(expression(paste("estimated", rho, "=", 0.2)),
+                                expression(paste("estimated", rho, "=", 0.5)),
+                                expression(paste("estimated", rho, "=", 0.7)),
+                                expression(paste("true", rho, "=", 0.2)),
+                                expression(paste("true", rho, "=", 0.5)),
+                                expression(paste("true", rho, "=", 0.7))),
+       lty = c(1,1,1,3,3,3), col = c(3,2,4,3,2,4))
+```
