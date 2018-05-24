@@ -56,8 +56,8 @@ plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
 # Fit gain to density
 cor(df.log.avg)
 
-least.squares <- lm(formula=gain~density, data=df.log.avg)
-least.absolute.deviations <- lad(formula=gain~density, data=df.log.avg)
+least.squares <- lm(gain~density, data=df.log.avg)
+least.absolute.deviations <- lad(gain~density, data=df.log.avg)
 
 plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
@@ -89,7 +89,7 @@ qqline(least.absolute.deviations$residuals, col='blue')
 
 # If the densities of the polyethylene blocks were not reported exactly, not only would we not know the density of our snow, our explanatory variable, but we could also retrieve inaccurate data for the gain from the photons. It is possible that if the density of the snow was not properly reported, our whole data set would be flawed and we could arrive at a calibration procedure different from what we would have wanted.
 
-# Since the blocks themselves were in random locations, therefore if the measurement were not taken randomly, then it might happen that the measurements might be taken in a only specific area and thus causing bias. 
+# Since the blocks themselves were in random locations, therefore if the measurement were not taken randomly, then it might happen that the measurements might be taken in a only specific area and thus causing bias.
 
 # If the blocks of polyethylene were not measured in random order, there could be a dependence on the measurements of the snow densities, and our data would not be i.i.d. If we handpicked which blocks to measure or picked them in a predetermined order, the density of the snow blocks could influence how the gain was recorded for each block of snow and also produce inaccurate results.
 ```
