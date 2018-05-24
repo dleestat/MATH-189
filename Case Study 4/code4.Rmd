@@ -33,7 +33,7 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 
 * Do the residuals indicate any problems with the fit?
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
-* What if the blocks of polyethylene were not measured in random order?
+* What if the blocks of polyethylene were not measured in random order (location)?
 ```{r}
 # Plot raw data
 title <- 'Density vs. Gain'
