@@ -37,7 +37,7 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 ```{r}
 # Plot raw data
 title <- 'Density vs. Gain'
-x.axis <- expression('Density (g/cm'^3*')')
+x.axis <- expression('Density (g/cm'^3*')') 
 y.axis <- 'Gain'
 plot(df, main=title, xlab=x.axis, ylab=y.axis)
 
@@ -93,6 +93,7 @@ qqline(least.absolute.deviations$residuals, col='blue')
 Ultimately we are interested in answering questions such as: Given a gain reading of 38.6, what is the density of the snow-pack? Given a gain reading of 426.7, what is the density of the snow-pack? These two numeric values, 38.6 and 426.7, were chosen because they are the average gains for the 0.508 and 0.001 densities, respectively.
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
+
 ```{r}
 library(ggplot2)
 # Least Square b0 and b1 value
@@ -110,7 +111,7 @@ ls.regression <- function(gain){
 density.1 <- ls.regression(38.6)
 density.2 <- ls.regression(426.7)
 
-# Graph for Bands for two estimates
+# Graph for Confidence Interval Bands for two estimates
 ggplot(df.log.avg,aes(x=density, y=gain)) + 
   geom_point(color='#2980B9', size = 4) + 
   geom_smooth(method=lm, color='#2C3E50')+geom_point() +
@@ -122,6 +123,46 @@ ggplot(df.log.avg,aes(x=density, y=gain)) +
   geom_point(aes(x=0.508, y=3.65745), colour="yellow") +
   geom_point()+geom_point(aes(x=0.001, y=5.99266), colour="red")
 
+# Parameters
+delta_h <-sd(least.squares$residuals)
+z <- qnorm(0.975)
+m <- 9
+x_bar <- mean(df$density)
+den <- sum((df$density-x_bar)**2)
+
+# Prediction Interval 
+lower.pi.bound <- function(gain){
+  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
+}
+upper.pi.bound <- function(gain){
+  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
+}
+print("The Prediction Interval for the predicted density given gain = 38.6 is")
+lower.pi.bound(38.6)
+upper.pi.bound(38.6)
+print("The Prediction Interval for the predicted density given gain = 426.7 is")
+lower.pi.bound(426.7)
+upper.pi.bound(426.7)
+
+# Parameters
+t <- qt(0.975, m-2)
+# Confidence Interval
+lower.ci.bound <- function(gain){
+  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
+}
+upper.ci.bound <- function(gain){
+  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
+}
+print("The Confidence Interval for the predicted density given gain = 38.6 is")
+lower.ci.bound(38.6)
+upper.ci.bound(38.6)
+print("The Confidence Interval for the predicted density given gain = 426.7 is")
+lower.ci.bound(426.7)
+upper.ci.bound(426.7)
+
+```
+
+```{r}
 # Construct Confidence Interval for density = 0.508
 new.data <- data.frame(density = 0.508)
 log_prediction = predict(least.squares, new.data, interval="confidence")
