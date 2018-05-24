@@ -100,7 +100,8 @@ Ultimately we are interested in answering questions such as: Given a gain readin
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
 ```{r}
-
+pred.int =  predict(least.squares, interval="prediction", level=.95)
+plot(pred.int)
 ```
 
 ```{r}
