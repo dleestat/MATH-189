@@ -120,21 +120,22 @@ PredictDensity <- function(gain)
 
 
 # Prediction and confidence intervals
+t <- qt(.975, df=m-2)
 mean.density <- mean(df.log.avg$density)
 summation <- sum((df.log.avg$density - mean.density) ^ 2)
 
-s2 = aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
-s2.pooled = mean(s2$variance)
+s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
+s.pooled <- sqrt(mean(s2$variance))
 
 Pi <- function(density) {
   center <- PredictLogGain(density)
-  width <- qt(.975, df=m-2) * s2.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
+  width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
   c(center - width, center + width)
 }
 
 Ci <- function(density) {
   center <- PredictLogGain(density)
-  width <- qt(.975, df=m-2) * s2.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
+  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
   c(center - width, center + width)
 }
 ```
