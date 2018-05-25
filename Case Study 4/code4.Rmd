@@ -93,12 +93,6 @@ qqnorm(least.squares.residuals$gain, main=paste('Normal Q-Q Plot with', title.re
 qqline(least.squares.residuals$gain, col='red')
 qqnorm(lad.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
 qqline(lad.residuals$gain, col='blue')
-
-# If the densities of the polyethylene blocks were not reported exactly, not only would we not know the density of our snow, our explanatory variable, but we could also retrieve inaccurate data for the gain from the photons. It is possible that if the density of the snow was not properly reported, our whole data set would be flawed and we could arrive at a calibration procedure different from what we would have wanted.
-
-# Since the blocks themselves were in random locations, therefore if the measurement were not taken randomly, then it might happen that the measurements might be taken in a only specific area and thus causing bias.
-
-# If the blocks of polyethylene were not measured in random order, there could be a dependence on the measurements of the snow densities, and our data would not be i.i.d. If we handpicked which blocks to measure or picked them in a predetermined order, the density of the snow blocks could influence how the gain was recorded for each block of snow and also produce inaccurate results.
 ```
 
 
@@ -198,10 +192,11 @@ DensityPi <- function(gain) {
 
 
 # Point and interval estimates for example gain readings
-PredictDensity(38.6)
+PredictDensity(38.6)  # 38.6 is the average gain for 0.508 density
 DensityCi(38.6)
 DensityPi(38.6)
-PredictDensity(426.7)
+
+PredictDensity(426.7)  # 426.7 is the average gain for 0.001 density
 DensityCi(426.7)
 DensityPi(426.7)
 ```
