@@ -63,7 +63,7 @@ cor(df.log.avg)
 least.squares <- lm(gain~density, data=df.log.avg)
 lad <- lad(gain~density, data=df.log.avg)
 
-plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
 abline(lad, col='blue')
 legend('topright', legend=c('Least Squares', 'Least Absolute Deviations'), col=c('red', 'blue'), lty=1)
@@ -74,7 +74,7 @@ lad
 summary(lad)
 
 
-# Check conditions for linear regression: linearity, normality of residuals, constant variability
+# Check conditions for linear regression: linearity, normality of residuals, and constant variability
 least.squares.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(least.squares), each=10))
 lad.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(lad), each=10))
 
@@ -106,7 +106,6 @@ qqline(lad.residuals$gain, col='blue')
 Ultimately we are interested in answering questions such as: Given a gain reading of 38.6, what is the density of the snow-pack? Given a gain reading of 426.7, what is the density of the snow-pack? These two numeric values, 38.6 and 426.7, were chosen because they are the average gains for the 0.508 and 0.001 densities, respectively.
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
-
 ```{r}
 # Predictions
 intercept <- coef(least.squares)[[1]]
@@ -133,11 +132,25 @@ Pi <- function(density) {
   c(center - width, center + width)  # Return prediction interval
 }
 
+PiLower <- function(density)
+  Pi(density)[1]
+f <- Vectorize(PiLower)
+
 Ci <- function(density) {
   center <- PredictLogGain(density)
   width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
   c(center - width, center + width)  # Return confidence interval
 }
+
+diff(Pi(0))
+diff(Pi(0.3))
+diff(Pi(0.7))
+PiLower(0.5)
+
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
+abline(least.squares, col='red')
+curve(f, n=2, col='blue', add=TRUE)
+legend('topright', legend=c('Least Squares', 'Upper PI'), col=c('red', 'blue'), lty=1)
 ```
 
 ```{r}
