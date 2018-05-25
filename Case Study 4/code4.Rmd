@@ -126,16 +126,10 @@ summation <- sum((df.log.avg$density - mean.density) ^ 2)
 s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s.pooled <- sqrt(mean(s2$variance))
 
-PiLower <- function(density) {
+Pi <- function(density) {
   center <- PredictLogGain(density)
   width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
-  center - width  # Return lower end of prediction interval
-}
-
-PiUpper <- function(density) {
-  center <- PredictLogGain(density)
-  width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
-  center + width  # Return upper end of prediction interval
+  list(center - width, center + width)  # Return lower end of prediction interval
 }
 
 CiLower <- function(density) {
@@ -150,10 +144,13 @@ CiUpper <- function(density) {
   center + width  # Return lower end of confidence interval
 }
 
+PiLower <- Vectorize(PiLower)
 plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
 evaluations <- 100000
-curve(PiLower, n=evaluations, col='blue', add=TRUE)
+# curve(PiLower, n=evaluations, col='blue', add=TRUE)
+prediction.intervals <- data.frame(density=df.log.avg$density, lower=)
+lines(x=df.log.avg$density, y=prediction.intervals[[1]])
 curve(PiUpper, n=evaluations, col='blue', add=TRUE)
 curve(CiLower, n=evaluations, col='green', add=TRUE)
 curve(CiUpper, n=evaluations, col='green', add=TRUE)
