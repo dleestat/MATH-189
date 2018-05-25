@@ -112,10 +112,10 @@ intercept <- coef(least.squares)[[1]]
 slope <- coef(least.squares)[[2]]
 
 PredictLogGain <- function(density)
-  predict(least.squares, data.frame(density=density))  # Return log(gain)
+  predict(least.squares, data.frame(density=density))  # Predict log(gain) using density
 
 PredictDensity <- function(gain)
-  (log(gain) - intercept) / slope  # Return density
+  (log(gain) - intercept) / slope  # Predict density using gain
 
 
 # Prediction and confidence intervals
@@ -126,31 +126,38 @@ summation <- sum((df.log.avg$density - mean.density) ^ 2)
 s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s.pooled <- sqrt(mean(s2$variance))
 
-Pi <- function(density) {
+PiLower <- function(density) {
   center <- PredictLogGain(density)
   width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
-  c(center - width, center + width)  # Return prediction interval
+  center - width  # Return lower end of prediction interval
 }
 
-PiLower <- function(density)
-  Pi(density)[1]
-f <- Vectorize(PiLower)
+PiUpper <- function(density) {
+  center <- PredictLogGain(density)
+  width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
+  center + width  # Return upper end of prediction interval
+}
 
-Ci <- function(density) {
+CiLower <- function(density) {
   center <- PredictLogGain(density)
   width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
-  c(center - width, center + width)  # Return confidence interval
+  center - width  # Return lower end of confidence interval
 }
 
-diff(Pi(0))
-diff(Pi(0.3))
-diff(Pi(0.7))
-PiLower(0.5)
+CiUpper <- function(density) {
+  center <- PredictLogGain(density)
+  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
+  center + width  # Return lower end of confidence interval
+}
 
 plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
-curve(f, n=2, col='blue', add=TRUE)
-legend('topright', legend=c('Least Squares', 'Upper PI'), col=c('red', 'blue'), lty=1)
+evaluations <- 100000
+curve(PiLower, n=evaluations, col='blue', add=TRUE)
+curve(PiUpper, n=evaluations, col='blue', add=TRUE)
+curve(CiLower, n=evaluations, col='green', add=TRUE)
+curve(CiUpper, n=evaluations, col='green', add=TRUE)
+legend('topright', legend=c('Least Squares', 'PI', 'CI'), col=c('red', 'blue', 'green'), lty=1)
 ```
 
 ```{r}
