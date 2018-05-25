@@ -28,7 +28,9 @@ m <- 9  # Number of distinct block densities
 t <- 10  # Number of replicate measurements
 
 #install.packages('L1pack')
+#install.packages("quantreg")
 library(L1pack)  # Used for least absolute deviations regression line
+library(quantreg)  # Used for quantile regression line
 ```
 
 
@@ -64,37 +66,45 @@ cor(df.log.avg)
 
 least.squares <- lm(gain~density, data=df.log.avg)
 lad <- lad(gain~density, data=df.log.avg)
+quant <- rq(gain~density, tau=.5, data=df.log.avg)
 
 plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
 abline(least.squares, col='red')
 abline(lad, col='blue')
-legend('topright', legend=c('Least Squares Regression Line', 'Least Absolute Deviations Regression Line'), col=c('red', 'blue'), lty=1)
+abline(quant, col='green')
+legend('topright', legend=c('Least Squares Regression Line', 'Least Absolute Deviations Regression Line', '50% Quantile Regression Line'), col=c('red', 'blue', 'green'), lty=1)
 
-least.squares
 summary(least.squares)
-lad
 summary(lad)
+quant
 
 
 # Check conditions for linear regression: linearity, normality of residuals, and constant variability
 least.squares.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(least.squares), each=10))
 lad.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(lad), each=10))
+quant.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(quant), each=10))
 
 title.residuals1 <- 'Residuals of Least Squares Regression Line'
 title.residuals2 <- 'Residuals of Least Absolute Deviations Regression Line'
+title.residuals3 <- 'Residuals of 50% Quantile Regression Line'
 plot(least.squares.residuals$gain, main=title.residuals1, ylab=y.axis)
 abline(0, 0, col='red')
 plot(lad.residuals$gain, main=title.residuals2, ylab=y.axis)
 abline(0, 0, col='blue')
+plot(quant.residuals$gain, main=title.residuals3, ylab=y.axis)
+abline(0, 0, col='green')
 
 num.bins <- 12
 hist(least.squares.residuals$gain, breaks=num.bins, main=title.residuals1, xlab=y.axis, col='red')
 hist(lad.residuals$gain, breaks=num.bins, main=title.residuals2, xlab=y.axis, col='blue')
+hist(quant.residuals$gain, breaks=num.bins, main=title.residuals3, xlab=y.axis, col='green')
 
 qqnorm(least.squares.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
 qqline(least.squares.residuals$gain, col='red')
 qqnorm(lad.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
 qqline(lad.residuals$gain, col='blue')
+qqnorm(quant.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals3), cex.main=1)
+qqline(quant.residuals$gain, col='green')
 ```
 
 
@@ -119,9 +129,9 @@ PredictDensityLad <- function(gain) {
   (log(gain) - intercept) / slope  # Predict density using gain
 }
 
-PredictDensityQuantile <- function(gain) {
-  intercept <- 0
-  slope <- 0
+PredictDensityQuant <- function(gain) {
+  intercept <- coef(quant)[[1]]
+  slope <- coef(quant)[[2]]
   (log(gain) - intercept) / slope  # Predict density using gain
 }
 
@@ -208,13 +218,13 @@ DensityPi <- function(gain) {
 # Point and interval estimates for example gain readings
 PredictDensityLeastSquares(38.6)  # 38.6 is the average gain for 0.508 density
 PredictDensityLad(38.6)
-#PredictDensityQuantile(38.6)
+PredictDensityQuant(38.6)
 DensityCi(38.6)
 DensityPi(38.6)
 
 PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
 PredictDensityLad(426.7)
-#PredictDensityQuantile(38.6)
+PredictDensityQuant(38.6)
 DensityCi(426.7)
 DensityPi(426.7)
 ```
