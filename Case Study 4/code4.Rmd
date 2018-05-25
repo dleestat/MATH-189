@@ -22,7 +22,10 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 ## Setup
 ```{r}
 df <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
-df <- df[order(df$density),]  # Least to greatest density
+df <- df[order(df$density), ]  # Sort from least to greatest density
+
+m <- 9  # Number of distinct block densities
+t <- 10  # Number of replicate measurements
 
 #install.packages('L1pack')
 library(L1pack)  # Used for least absolute deviations regression line
@@ -105,31 +108,35 @@ Ultimately we are interested in answering questions such as: Given a gain readin
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
 
 ```{r}
-intercept = coef(least.squares)[[1]]
-slope = coef(least.squares)[[2]]
+# Predictions
+intercept <- coef(least.squares)[[1]]
+slope <- coef(least.squares)[[2]]
 
-LogPredict <- function(density) {
-  predict(least.squares, data.frame(density=density))  # Returns log(gain)
-}
+PredictLogGain <- function(density)
+  predict(least.squares, data.frame(density=density))  # Return log(gain)
 
-Invert <- function(gain) {
-  (log(gain) - intercept) / slope  # Returns density
-}
+PredictDensity <- function(gain)
+  (log(gain) - intercept) / slope  # Return density
 
-Pi <- function(density) {
-  
-}
 
-Ci <- function(density) {
-  
-}
-
-Predict(0.508)
-Invert(38.6)
-Invert(426.7)
+# Prediction and confidence intervals
+mean.density <- mean(df.log.avg$density)
+summation <- sum((df.log.avg$density - mean.density) ^ 2)
 
 s2 = aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s2.pooled = mean(s2$variance)
+
+Pi <- function(density) {
+  center <- PredictLogGain(density)
+  width <- qt(.975, df=m-2) * s2.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
+  c(center - width, center + width)
+}
+
+Ci <- function(density) {
+  center <- PredictLogGain(density)
+  width <- qt(.975, df=m-2) * s2.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
+  c(center - width, center + width)
+}
 ```
 
 ```{r}
