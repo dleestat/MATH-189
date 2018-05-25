@@ -118,7 +118,7 @@ PredictDensity <- function(gain)
   (log(gain) - intercept) / slope  # Predict density using gain
 
 
-# Prediction and confidence intervals
+# Prediction and confidence intervals of log(gain) using density
 t <- qt(.975, df=m-2)
 mean.density <- mean(df.log.avg$density)
 summation <- sum((df.log.avg$density - mean.density) ^ 2)
@@ -126,16 +126,32 @@ summation <- sum((df.log.avg$density - mean.density) ^ 2)
 s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s.pooled <- sqrt(mean(s2$variance))
 
-Ci <- function(density) {
-  center <- PredictLogGain(density)
-  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
-  list(center - width, center + width)  # Return confidence interval
+center.expr <- quote(center <- PredictLogGain(density))
+ci.width.expr <- quote(width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation))
+pi.width.expr <- quote(width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation))
+
+LogGainCiLower <- function(density) {
+  eval(center.expr)
+  eval(ci.width.expr)
+  center - width
 }
 
-Pi <- function(density) {
-  center <- PredictLogGain(density)
-  width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
-  list(center - width, center + width)  # Return prediction interval
+LogGainCiUpper <- function(density) {
+  eval(center.expr)
+  eval(ci.width.expr)
+  center + width
+}
+
+LogGainPiLower <- function(density) {
+  eval(center.expr)
+  eval(pi.width.expr)
+  center - width
+}
+
+LogGainPiUpper <- function(density) {
+  eval(center.expr)
+  eval(pi.width.expr)
+  center + width
 }
 
 
@@ -150,19 +166,44 @@ size <- 1.5
 line.type <- 3
 line.width <- 0.7
 
-confidence.intervals <- data.frame(density=df.log.avg$density, lower=Ci(df.log.avg$density)[[1]], upper=Ci(df.log.avg$density)[[2]])
+confidence.intervals <- data.frame(density=df.log.avg$density, lower=LogGainCiLower(df.log.avg$density), upper=LogGainCiUpper(df.log.avg$density))
 points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
 points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
 lines(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, lty=line.type, lwd=line.width)
 lines(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, lty=line.type, lwd=line.width)
 
-prediction.intervals <- data.frame(density=df.log.avg$density, lower=Pi(df.log.avg$density)[[1]], upper=Pi(df.log.avg$density)[[2]])
+prediction.intervals <- data.frame(density=df.log.avg$density, lower=LogGainPiLower(df.log.avg$density), upper=LogGainPiUpper(df.log.avg$density))
 points(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, pch=symbol, cex=size)
 points(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, pch=symbol, cex=size)
 lines(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, lty=line.type, lwd=line.width)
 lines(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, lty=line.type, lwd=line.width)
 
 legend('topright', legend=c('Least Squares', 'Confidence Interval Bands', 'Prediction Interval Bands'), col=c('red', ci.col, pi.col), lty=1)
+
+
+# Prediction and confidence intervals of density using gain
+end.points <- c(-1,3)
+
+DensityCi <- function(gain) {
+  lower <- uniroot(function(density) log(gain) - LogGainCiLower(density), end.points)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainCiUpper(density), end.points)[[1]]
+  c(lower, upper)
+}
+
+DensityPi <- function(gain) {
+  lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), end.points)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), end.points)[[1]]
+  c(lower, upper)
+}
+
+
+# Point and interval estimates for example gain readings
+PredictDensity(38.6)
+DensityCi(38.6)
+DensityPi(38.6)
+PredictDensity(426.7)
+DensityCi(426.7)
+DensityPi(426.7)
 ```
 
 ```{r}
