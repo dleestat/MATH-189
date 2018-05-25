@@ -106,7 +106,7 @@ qqline(lad.residuals$gain, col='blue')
 Ultimately we are interested in answering questions such as: Given a gain reading of 38.6, what is the density of the snow-pack? Given a gain reading of 426.7, what is the density of the snow-pack? These two numeric values, 38.6 and 426.7, were chosen because they are the average gains for the 0.508 and 0.001 densities, respectively.
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
-```{r}
+```{r fig.asp=2, fig.width=5}
 # Predictions
 intercept <- coef(least.squares)[[1]]
 slope <- coef(least.squares)[[2]]
@@ -126,35 +126,43 @@ summation <- sum((df.log.avg$density - mean.density) ^ 2)
 s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s.pooled <- sqrt(mean(s2$variance))
 
+Ci <- function(density) {
+  center <- PredictLogGain(density)
+  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
+  list(center - width, center + width)  # Return confidence interval
+}
+
 Pi <- function(density) {
   center <- PredictLogGain(density)
   width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation)
-  list(center - width, center + width)  # Return lower end of prediction interval
+  list(center - width, center + width)  # Return prediction interval
 }
 
-CiLower <- function(density) {
-  center <- PredictLogGain(density)
-  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
-  center - width  # Return lower end of confidence interval
-}
 
-CiUpper <- function(density) {
-  center <- PredictLogGain(density)
-  width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation)
-  center + width  # Return lower end of confidence interval
-}
-
-PiLower <- Vectorize(PiLower)
+# Add bands around least squares line
 plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
 abline(least.squares, col='red')
-evaluations <- 100000
-# curve(PiLower, n=evaluations, col='blue', add=TRUE)
-prediction.intervals <- data.frame(density=df.log.avg$density, lower=)
-lines(x=df.log.avg$density, y=prediction.intervals[[1]])
-curve(PiUpper, n=evaluations, col='blue', add=TRUE)
-curve(CiLower, n=evaluations, col='green', add=TRUE)
-curve(CiUpper, n=evaluations, col='green', add=TRUE)
-legend('topright', legend=c('Least Squares', 'PI', 'CI'), col=c('red', 'blue', 'green'), lty=1)
+
+ci.col <- 'purple'
+pi.col <- 'blue'
+symbol <- '-'
+size <- 1.5
+line.type <- 3
+line.width <- 0.7
+
+confidence.intervals <- data.frame(density=df.log.avg$density, lower=Ci(df.log.avg$density)[[1]], upper=Ci(df.log.avg$density)[[2]])
+points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
+points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
+lines(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, lty=line.type, lwd=line.width)
+lines(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, lty=line.type, lwd=line.width)
+
+prediction.intervals <- data.frame(density=df.log.avg$density, lower=Pi(df.log.avg$density)[[1]], upper=Pi(df.log.avg$density)[[2]])
+points(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, pch=symbol, cex=size)
+points(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, pch=symbol, cex=size)
+lines(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, lty=line.type, lwd=line.width)
+lines(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, lty=line.type, lwd=line.width)
+
+legend('topright', legend=c('Least Squares', 'Confidence Interval Bands', 'Prediction Interval Bands'), col=c('red', ci.col, pi.col), lty=1)
 ```
 
 ```{r}
