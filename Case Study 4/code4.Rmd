@@ -105,7 +105,6 @@ qqline(lad.residuals$gain, col='blue')
 qqnorm(quant.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals3), cex.main=1)
 qqline(quant.residuals$gain, col='green')
 ```
-<<<<<<< HEAD
 
 
 ## Scenario 2: Predicting
@@ -134,8 +133,6 @@ PredictDensityQuant <- function(gain) {
   slope <- coef(quant)[[2]]
   (log(gain) - intercept) / slope  # Predict density using gain
 }
-=======
->>>>>>> 4e947b0b6ed0f556f82889dbfc342823e2ba8a27
 
 
 # 95% prediction and confidence intervals of log(gain) using density
@@ -143,7 +140,6 @@ t <- qt(.975, df=m-2)
 mean.density <- mean(df.log.avg$density)
 summation <- sum((df.log.avg$density - mean.density) ^ 2)
 
-<<<<<<< HEAD
 s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
 s.pooled <- sqrt(mean(s2$variance))
 
@@ -173,64 +169,7 @@ LogGainPiUpper <- function(density) {
   eval(center.expr)
   eval(pi.width.expr)
   center + width
-=======
-* Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
-```{r fig.asp=2, fig.width=5}
-# Predictions
-PredictLogGain <- function(density)
-  predict(least.squares, data.frame(density=density))  # Predict log(gain) using density
-
-PredictDensityLeastSquares <- function(gain) {
-  intercept <- coef(least.squares)[[1]]
-  slope <- coef(least.squares)[[2]]
-  (log(gain) - intercept) / slope  # Predict density using gain
 }
-
-PredictDensityLad <- function(gain) {
-  intercept <- coef(lad)[[1]]
-  slope <- coef(lad)[[2]]
-  (log(gain) - intercept) / slope  # Predict density using gain
-}
-
-PredictDensityQuant <- function(gain) {
-  intercept <- coef(quant)[[1]]
-  slope <- coef(quant)[[2]]
-  (log(gain) - intercept) / slope  # Predict density using gain
-}
-
-
-# 95% prediction and confidence intervals of log(gain) using density
-t <- qt(.975, df=m-2)
-mean.density <- mean(df.log.avg$density)
-summation <- sum((df.log.avg$density - mean.density) ^ 2)
-
-s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
-s.pooled <- sqrt(mean(s2$variance))
-
-center.expr <- quote(center <- PredictLogGain(density))
-ci.width.expr <- quote(width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation))
-pi.width.expr <- quote(width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation))
-
-LogGainCiLower <- function(density) {
-  eval(center.expr)
-  eval(ci.width.expr)
-  center - width
->>>>>>> 4e947b0b6ed0f556f82889dbfc342823e2ba8a27
-}
-
-LogGainCiUpper <- function(density) {
-  eval(center.expr)
-  eval(ci.width.expr)
-  center + width
-}
-
-LogGainPiLower <- function(density) {
-  eval(center.expr)
-  eval(pi.width.expr)
-  center - width
-=======
-<<<<<<< HEAD
-
 
 # Add bands around least squares line
 plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
@@ -243,78 +182,6 @@ size <- 1.5
 line.type <- 3
 line.width <- 0.7
 
-confidence.intervals <- data.frame(density=df.log.avg$density, lower=LogGainCiLower(df.log.avg$density), upper=LogGainCiUpper(df.log.avg$density))
-points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
-points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
-lines(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, lty=line.type, lwd=line.width)
-lines(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, lty=line.type, lwd=line.width)
-
-prediction.intervals <- data.frame(density=df.log.avg$density, lower=LogGainPiLower(df.log.avg$density), upper=LogGainPiUpper(df.log.avg$density))
-points(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, pch=symbol, cex=size)
-points(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, pch=symbol, cex=size)
-lines(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, lty=line.type, lwd=line.width)
-lines(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, lty=line.type, lwd=line.width)
-
-legend('topright', legend=c('Least Squares Regression Line', '95% Confidence Interval Bands', '95% Prediction Interval Bands'), col=c('red', ci.col, pi.col), lty=1)
-
-
-# 95% prediction and confidence intervals of density using gain
-interval <- c(-1, 3)  # Interval to search the root in
-
-DensityCi <- function(gain) {
-  lower <- uniroot(function(density) log(gain) - LogGainCiLower(density), interval=interval)[[1]]
-  upper <- uniroot(function(density) log(gain) - LogGainCiUpper(density), interval=interval)[[1]]
-  c(lower, upper)
-}
-
-DensityPi <- function(gain) {
-  lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), interval=interval)[[1]]
-  upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), interval=interval)[[1]]
-  c(lower, upper)
-<<<<<<< HEAD
-}
-
-
-=======
-=======
-upper.pi.bound <- function(gain){
-  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
-}
-print("The Prediction Interval for the predicted density given gain = 38.6 is")
-lower.pi.bound(38.6)
-upper.pi.bound(38.6)
-print("The Prediction Interval for the predicted density given gain = 426.7 is")
-lower.pi.bound(426.7)
-upper.pi.bound(426.7)
-
-# Parameters
-t <- qt(0.975, m-2)
-# Confidence Interval
-lower.ci.bound <- function(gain){
-  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
->>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
->>>>>>> d4f5f9c0a005e74c03c52f2335922402dbf39c0f
-}
-
-LogGainPiUpper <- function(density) {
-  eval(center.expr)
-  eval(pi.width.expr)
-  center + width
-}
-
-
-# Add bands around least squares line
-plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
-abline(least.squares, col='red')
-
-ci.col <- 'purple'
-pi.col <- 'blue'
-symbol <- '-'
-size <- 1.5
-line.type <- 3
-line.width <- 0.7
-
-<<<<<<< HEAD
 confidence.intervals <- data.frame(density=df.log.avg$density, lower=LogGainCiLower(df.log.avg$density), upper=LogGainCiUpper(df.log.avg$density))
 points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
 points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
@@ -346,7 +213,6 @@ DensityPi <- function(gain) {
 }
 
 
->>>>>>> 4e947b0b6ed0f556f82889dbfc342823e2ba8a27
 # Point and interval estimates for example gain readings
 PredictDensityLeastSquares(38.6)  # 38.6 is the average gain for 0.508 density
 PredictDensityLad(38.6)
@@ -354,27 +220,11 @@ PredictDensityQuant(38.6)
 DensityCi(38.6)
 DensityPi(38.6)
 
-<<<<<<< HEAD
-=======
-PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
-PredictDensityLad(426.7)
-PredictDensityQuant(38.6)
-DensityCi(426.7)
-DensityPi(426.7)
-=======
-<<<<<<< HEAD
->>>>>>> 4e947b0b6ed0f556f82889dbfc342823e2ba8a27
 PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
 PredictDensityLad(426.7)
 PredictDensityQuant(426.7)
 DensityCi(426.7)
 DensityPi(426.7)
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
->>>>>>> d4f5f9c0a005e74c03c52f2335922402dbf39c0f
->>>>>>> 4e947b0b6ed0f556f82889dbfc342823e2ba8a27
 ```
 
 
@@ -480,5 +330,4 @@ qqline(fit2$residuals, col='red')
 title.residuals1 <- 'Residuals of Least Square Regression Line'
 plot(fit2$residuals, main=title.residuals1, ylab = "Standardized Residuals")
 abline(0, 0, col='red')
-
 ```
