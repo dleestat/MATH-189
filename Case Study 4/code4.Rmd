@@ -152,6 +152,7 @@ LogGainCiLower <- function(density) {
   eval(ci.width.expr)
   center - width
 }
+<<<<<<< HEAD
 
 LogGainCiUpper <- function(density) {
   eval(center.expr)
@@ -163,6 +164,67 @@ LogGainPiLower <- function(density) {
   eval(center.expr)
   eval(pi.width.expr)
   center - width
+=======
+<<<<<<< HEAD
+
+
+# Add bands around least squares line
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
+abline(least.squares, col='red')
+
+ci.col <- 'purple'
+pi.col <- 'blue'
+symbol <- '-'
+size <- 1.5
+line.type <- 3
+line.width <- 0.7
+
+confidence.intervals <- data.frame(density=df.log.avg$density, lower=LogGainCiLower(df.log.avg$density), upper=LogGainCiUpper(df.log.avg$density))
+points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
+points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
+lines(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, lty=line.type, lwd=line.width)
+lines(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, lty=line.type, lwd=line.width)
+
+prediction.intervals <- data.frame(density=df.log.avg$density, lower=LogGainPiLower(df.log.avg$density), upper=LogGainPiUpper(df.log.avg$density))
+points(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, pch=symbol, cex=size)
+points(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, pch=symbol, cex=size)
+lines(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, lty=line.type, lwd=line.width)
+lines(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, lty=line.type, lwd=line.width)
+
+legend('topright', legend=c('Least Squares Regression Line', '95% Confidence Interval Bands', '95% Prediction Interval Bands'), col=c('red', ci.col, pi.col), lty=1)
+
+
+# 95% prediction and confidence intervals of density using gain
+interval <- c(-1, 3)  # Interval to search the root in
+
+DensityCi <- function(gain) {
+  lower <- uniroot(function(density) log(gain) - LogGainCiLower(density), interval=interval)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainCiUpper(density), interval=interval)[[1]]
+  c(lower, upper)
+}
+
+DensityPi <- function(gain) {
+  lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), interval=interval)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), interval=interval)[[1]]
+  c(lower, upper)
+=======
+upper.pi.bound <- function(gain){
+  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
+}
+print("The Prediction Interval for the predicted density given gain = 38.6 is")
+lower.pi.bound(38.6)
+upper.pi.bound(38.6)
+print("The Prediction Interval for the predicted density given gain = 426.7 is")
+lower.pi.bound(426.7)
+upper.pi.bound(426.7)
+
+# Parameters
+t <- qt(0.975, m-2)
+# Confidence Interval
+lower.ci.bound <- function(gain){
+  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
+>>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
+>>>>>>> d4f5f9c0a005e74c03c52f2335922402dbf39c0f
 }
 
 LogGainPiUpper <- function(density) {
@@ -183,6 +245,7 @@ size <- 1.5
 line.type <- 3
 line.width <- 0.7
 
+<<<<<<< HEAD
 confidence.intervals <- data.frame(density=df.log.avg$density, lower=LogGainCiLower(df.log.avg$density), upper=LogGainCiUpper(df.log.avg$density))
 points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
 points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
@@ -226,6 +289,16 @@ PredictDensityLad(426.7)
 PredictDensityQuant(38.6)
 DensityCi(426.7)
 DensityPi(426.7)
+=======
+<<<<<<< HEAD
+PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
+PredictDensityLad(426.7)
+PredictDensityQuant(426.7)
+DensityCi(426.7)
+DensityPi(426.7)
+=======
+>>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
+>>>>>>> d4f5f9c0a005e74c03c52f2335922402dbf39c0f
 ```
 
 
