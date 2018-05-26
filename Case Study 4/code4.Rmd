@@ -62,8 +62,6 @@ plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.
 
 
 # Fit gain to density
-cor(df.log.avg)
-
 least.squares <- lm(gain~density, data=df.log.avg)
 lad <- lad(gain~density, data=df.log.avg)
 quant <- rq(gain~density, tau=.5, data=df.log.avg)
@@ -74,8 +72,9 @@ abline(lad, col='blue')
 abline(quant, col='green')
 legend('topright', legend=c('Least Squares Regression Line', 'Least Absolute Deviations Regression Line', '50% Quantile Regression Line'), col=c('red', 'blue', 'green'), lty=1)
 
-summary(least.squares)
-summary(lad)
+c(cor(df.log.avg), summary(least.squares)$r.squared)
+least.squares
+lad
 quant
 
 
