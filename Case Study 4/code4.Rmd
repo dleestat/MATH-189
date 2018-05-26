@@ -22,9 +22,15 @@ The aim of this lab is to provide a simple procedure for converting gain into de
 ## Setup
 ```{r}
 df <- read.table('gauge-1wb1wa6-2gpel41.txt', header=TRUE)
+df <- df[order(df$density), ]  # Sort from least to greatest density
+
+m <- 9  # Number of distinct block densities
+t <- 10  # Number of replicate measurements
 
 #install.packages('L1pack')
+#install.packages("quantreg")
 library(L1pack)  # Used for least absolute deviations regression line
+library(quantreg)  # Used for quantile regression line
 ```
 
 
@@ -33,65 +39,71 @@ Use the data to fit the gain, or a transformation of gain, to density. Try sketc
 
 * Do the residuals indicate any problems with the fit?
 * If the densities of the polyethylene blocks are not reported exactly, how might this affect the fit?
-* What if the blocks of polyethylene were not measured in random order?
+* What if the blocks of polyethylene were not measured in random order (location)?
 ```{r}
 # Plot raw data
 title <- 'Density vs. Gain'
-x.axis <- expression('Density (g/cm'^3*')') 
+x.axis <- expression('Density (g/cm'^3*')')
 y.axis <- 'Gain'
-plot(df, main=title, xlab=x.axis, ylab=y.axis)
+x.range <- c(0, .7)
+y.range <- c(2.5, 6)
+plot(df, main=title, xlab=x.axis, ylab=y.axis, xlim=x.range)
 
 
 # Take log transformation of response variable (gain)
 y.log.axis = 'log(Gain)'
 df.log = data.frame(df['density'], log(df['gain']))
-plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis)
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
 
 
 # Average replicate measurements
 df.log.avg = aggregate(list(gain=df.log$gain), by=list(density=df.log$density), FUN=mean)
-plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
 
 
 # Fit gain to density
-cor(df.log.avg)
-
 least.squares <- lm(gain~density, data=df.log.avg)
-least.absolute.deviations <- lad(gain~density, data=df.log.avg)
+lad <- lad(gain~density, data=df.log.avg)
+quant <- rq(gain~density, tau=.5, data=df.log.avg)
 
-plot(df.log.avg, main=title, xlab=x.axis, ylab=y.log.axis)
+plot(df.log, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
 abline(least.squares, col='red')
-abline(least.absolute.deviations, col='blue')
-legend('topright', legend=c('Least Squares', 'Least Absolute Deviations'), col=c('red', 'blue'), lty=1);
+abline(lad, col='blue')
+abline(quant, col='green')
+legend('topright', legend=c('Least Squares Regression Line', 'Least Absolute Deviations Regression Line', '50% Quantile Regression Line'), col=c('red', 'blue', 'green'), lty=1)
 
+c(cor(df.log.avg), summary(least.squares)$r.squared)
 least.squares
-summary(least.squares)
-least.absolute.deviations
-summary(least.absolute.deviations)
+lad
+quant
 
 
-# Check conditions for linear regression: linearity, normality of residuals, constant variability
+# Check conditions for linear regression: linearity, normality of residuals, and constant variability
+least.squares.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(least.squares), each=10))
+lad.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(lad), each=10))
+quant.residuals <- data.frame(df.log['density'], df.log['gain'] - rep(predict(quant), each=10))
+
 title.residuals1 <- 'Residuals of Least Squares Regression Line'
 title.residuals2 <- 'Residuals of Least Absolute Deviations Regression Line'
-plot(least.squares$residuals, main=title.residuals1, ylab=y.axis)
+title.residuals3 <- 'Residuals of 50% Quantile Regression Line'
+plot(least.squares.residuals$gain, main=title.residuals1, ylab=y.axis)
 abline(0, 0, col='red')
-plot(least.absolute.deviations$residuals, main=title.residuals2, ylab=y.axis)
+plot(lad.residuals$gain, main=title.residuals2, ylab=y.axis)
 abline(0, 0, col='blue')
+plot(quant.residuals$gain, main=title.residuals3, ylab=y.axis)
+abline(0, 0, col='green')
 
-num.bins <- 10
-hist(least.squares$residuals, breaks=num.bins, main=title.residuals1, xlab=y.axis, col='red')
-hist(least.absolute.deviations$residuals, breaks=num.bins, main=title.residuals2, xlab=y.axis, col='blue')
+num.bins <- 12
+hist(least.squares.residuals$gain, breaks=num.bins, main=title.residuals1, xlab=y.axis, col='red')
+hist(lad.residuals$gain, breaks=num.bins, main=title.residuals2, xlab=y.axis, col='blue')
+hist(quant.residuals$gain, breaks=num.bins, main=title.residuals3, xlab=y.axis, col='green')
 
-qqnorm(least.squares$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
-qqline(least.squares$residuals, col='red')
-qqnorm(least.absolute.deviations$residuals, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
-qqline(least.absolute.deviations$residuals, col='blue')
-
-# If the densities of the polyethylene blocks were not reported exactly, not only would we not know the density of our snow, our explanatory variable, but we could also retrieve inaccurate data for the gain from the photons. It is possible that if the density of the snow was not properly reported, our whole data set would be flawed and we could arrive at a calibration procedure different from what we would have wanted.
-
-# Since the blocks themselves were in random locations, therefore if the measurement were not taken randomly, then it might happen that the measurements might be taken in a only specific area and thus causing bias.
-
-# If the blocks of polyethylene were not measured in random order, there could be a dependence on the measurements of the snow densities, and our data would not be i.i.d. If we handpicked which blocks to measure or picked them in a predetermined order, the density of the snow blocks could influence how the gain was recorded for each block of snow and also produce inaccurate results.
+qqnorm(least.squares.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
+qqline(least.squares.residuals$gain, col='red')
+qqnorm(lad.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals2), cex.main=1)
+qqline(lad.residuals$gain, col='blue')
+qqnorm(quant.residuals$gain, main=paste('Normal Q-Q Plot with', title.residuals3), cex.main=1)
+qqline(quant.residuals$gain, col='green')
 ```
 
 
@@ -99,53 +111,65 @@ qqline(least.absolute.deviations$residuals, col='blue')
 Ultimately we are interested in answering questions such as: Given a gain reading of 38.6, what is the density of the snow-pack? Given a gain reading of 426.7, what is the density of the snow-pack? These two numeric values, 38.6 and 426.7, were chosen because they are the average gains for the 0.508 and 0.001 densities, respectively.
 
 * Develop a procedure for adding bands around your least squares line that can be used to make interval estimates for the snow-pack density from gain measurements. Keep in mind how the data were collected: several measurements of gain were taken for polyenythylene blocks of known density.
+```{r fig.asp=2, fig.width=5}
+# Predictions
+PredictLogGain <- function(density)
+  predict(least.squares, data.frame(density=density))  # Predict log(gain) using density
 
-```{r}
-pred.int =  predict(least.squares, interval="prediction", level=.95)
-plot(pred.int)
-```
-
-```{r}
-library(ggplot2)
-# Least Square b0 and b1 value
-b1 <-  as.numeric(coefficients((least.squares))[2])
-b0 <-  as.numeric(coefficients((least.squares))[1])
-
-# Function to use gain to predict density 
-ls.regression <- function(gain){
-  log.gain <-  log(gain)
-  estimated.density <-  (log.gain - b0) / b1;
-  return(estimated.density);
+PredictDensityLeastSquares <- function(gain) {
+  intercept <- coef(least.squares)[[1]]
+  slope <- coef(least.squares)[[2]]
+  (log(gain) - intercept) / slope  # Predict density using gain
 }
 
-# Estimates for density
-density.1 <- ls.regression(38.6)
-density.2 <- ls.regression(426.7)
-
-# Graph for Confidence Interval Bands for two estimates
-ggplot(df.log.avg,aes(x=density, y=gain)) + 
-  geom_point(color='#2980B9', size = 4) + 
-  geom_smooth(method=lm, color='#2C3E50')+geom_point() +
-  geom_point(aes(x=0.508, y=3.65745), colour="yellow") 
-
-ggplot(df.log.avg,aes(x=density, y=gain)) + 
-  geom_point(color='#2980B9', size = 4) + 
-  geom_smooth(method=lm, color='#2C3E50')+geom_point() +
-  geom_point(aes(x=0.508, y=3.65745), colour="yellow") +
-  geom_point()+geom_point(aes(x=0.001, y=5.99266), colour="red")
-
-# Parameters
-delta_h <-sd(least.squares$residuals)
-z <- qnorm(0.975)
-m <- 9
-x_bar <- mean(df$density)
-den <- sum((df$density-x_bar)**2)
-
-# Prediction Interval 
-lower.pi.bound <- function(gain){
-  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
+PredictDensityLad <- function(gain) {
+  intercept <- coef(lad)[[1]]
+  slope <- coef(lad)[[2]]
+  (log(gain) - intercept) / slope  # Predict density using gain
 }
-<<<<<<< HEAD
+
+PredictDensityQuant <- function(gain) {
+  intercept <- coef(quant)[[1]]
+  slope <- coef(quant)[[2]]
+  (log(gain) - intercept) / slope  # Predict density using gain
+}
+
+
+# 95% prediction and confidence intervals of log(gain) using density
+t <- qt(.975, df=m-2)
+mean.density <- mean(df.log.avg$density)
+summation <- sum((df.log.avg$density - mean.density) ^ 2)
+
+s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
+s.pooled <- sqrt(mean(s2$variance))
+
+center.expr <- quote(center <- PredictLogGain(density))
+ci.width.expr <- quote(width <- t * s.pooled * sqrt(1/m + (density-mean.density)^2 / summation))
+pi.width.expr <- quote(width <- t * s.pooled * sqrt(1 + 1/m + (density-mean.density)^2 / summation))
+
+LogGainCiLower <- function(density) {
+  eval(center.expr)
+  eval(ci.width.expr)
+  center - width
+}
+
+LogGainCiUpper <- function(density) {
+  eval(center.expr)
+  eval(ci.width.expr)
+  center + width
+}
+
+LogGainPiLower <- function(density) {
+  eval(center.expr)
+  eval(pi.width.expr)
+  center - width
+}
+
+LogGainPiUpper <- function(density) {
+  eval(center.expr)
+  eval(pi.width.expr)
+  center + width
+}
 
 
 # Add bands around least squares line
@@ -187,87 +211,82 @@ DensityPi <- function(gain) {
   lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), interval=interval)[[1]]
   upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), interval=interval)[[1]]
   c(lower, upper)
-=======
-upper.pi.bound <- function(gain){
-  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/z/z/delta_h/delta_h+18*x_bar*b1/z/delta_h*(b0-log(gain))/z/delta_h+10*den*b1*b1/z/delta_h/z/delta_h+9*(b0-log(gain))*(b0-log(gain))/z/z/delta_h/delta_h-10)-3*x_bar-3*den*b1*(b0-log(gain))/z/z/delta_h/delta_h)/(3*(den*(b1/z/delta_h)^2)-1))
 }
-print("The Prediction Interval for the predicted density given gain = 38.6 is")
-lower.pi.bound(38.6)
-upper.pi.bound(38.6)
-print("The Prediction Interval for the predicted density given gain = 426.7 is")
-lower.pi.bound(426.7)
-upper.pi.bound(426.7)
 
-# Parameters
-t <- qt(0.975, m-2)
-# Confidence Interval
-lower.ci.bound <- function(gain){
-  return((-sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
->>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
-}
-upper.ci.bound <- function(gain){
-  return((sqrt(den)*sqrt(9*x_bar*x_bar*b1*b1/t/t/delta_h/delta_h+18*x_bar*b1/t/delta_h*(b0-log(gain))/t/delta_h+9*(b0-log(gain))*(b0-log(gain))/t/t/delta_h/delta_h-1)-3*x_bar-3*den*b1*(b0-log(gain))/t/t/delta_h/delta_h)/(3*(den*(b1/t/delta_h)^2)-1))
-}
-print("The Confidence Interval for the predicted density given gain = 38.6 is")
-lower.ci.bound(38.6)
-upper.ci.bound(38.6)
-print("The Confidence Interval for the predicted density given gain = 426.7 is")
-lower.ci.bound(426.7)
-upper.ci.bound(426.7)
 
-```
+# Point and interval estimates for example gain readings
+PredictDensityLeastSquares(38.6)  # 38.6 is the average gain for 0.508 density
+PredictDensityLad(38.6)
+PredictDensityQuant(38.6)
+DensityCi(38.6)
+DensityPi(38.6)
 
-```{r}
-# Construct Confidence Interval for density = 0.508
-new.data <- data.frame(density = 0.508)
-log_prediction = predict(least.squares, new.data, interval="confidence")
-log_prediction
-prediction <- exp(log_prediction)
-prediction
-# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 38.76. The confidence interval of (36.296, 41.3963) signifies the range in which the true population parameter lies at a 95% level of confidence.
-
-# Construct Prediction Interval for density = 0.508
-log_prediction = predict(least.squares, new.data, interval="prediction")
-log_prediction
-prediction <- exp(log_prediction)
-prediction
-# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 38.76. The prediction interval is (32.7544, 45.87231).
-
-# Construct Confidence Interval for density = 0.001
-new.data <- data.frame(density = 0.001)
-log_prediction = predict(least.squares, new.data, interval="confidence")
-log_prediction
-prediction <- exp(log_prediction)
-prediction
-# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 400.4783. The confidence interval of (365.3647, 438.9665) signifies the range in which the true population parameter lies at a 95% level of confidence.
-
-# Construct Prediction Interval for density = 0.001
-log_prediction = predict(least.squares, new.data, interval="prediction")
-log_prediction
-prediction <- exp(log_prediction)
-prediction
-# Interpretation: From the output, the fitted gain at a snow density of 0.508 (g/cm'^3*') is around 400.4783. The prediction interval is (334.4508, 479.541).
-
-<<<<<<< HEAD
 PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
 PredictDensityLad(426.7)
 PredictDensityQuant(426.7)
 DensityCi(426.7)
 DensityPi(426.7)
-=======
->>>>>>> 8826eee1488bdd27557439752deda8eb4e450389
 ```
 
 
 ## Scenario 3: Cross-Validation
 To check how well your procedure works, omit the set of measurements corresponding to the block of density 0.508, apply your "estimation"/calibration procedure to the remaining data, and provide an interval estimate for the density of a block with an average reading of 38.6. Where does the actual density fall in the interval? Try the same test, for the set of measurements at the 0.001 density.
-```{r}
-
+```{r fig.asp=2, fig.width=5}
+for (omitted in c(0.508, 0.001)) {
+  # Omit measurements corresponding to the specified density
+  df.log.omitted = df.log[which(df.log['density'] != omitted), ]
+  df.log.avg.omitted <- df.log.avg[which(df.log.avg['density'] != omitted), ]
+  
+  
+  # Redo calculations using modified dataset
+  least.squares <- lm(gain~density, data=df.log.avg.omitted)
+  
+  mean.density <- mean(df.log.avg.omitted$density)
+  summation <- sum((df.log.avg.omitted$density - mean.density) ^ 2)
+  
+  s2 <- aggregate(list(variance=least.squares.residuals$gain), by=list(density=least.squares.residuals$density), FUN=var)
+  s.pooled <- sqrt(mean(s2$variance))
+  
+  ci.width.expr <- quote(width <- t * s.pooled * sqrt(1/(m-1) + (density-mean.density)^2 / summation))
+  pi.width.expr <- quote(width <- t * s.pooled * sqrt(1 + 1/(m-1) + (density-mean.density)^2 / summation))
+  
+  plot(df.log.omitted, main=title, xlab=x.axis, ylab=y.log.axis, xlim=x.range, ylim=y.range)
+  abline(least.squares, col='red')
+  
+  ci.col <- 'purple'
+  pi.col <- 'blue'
+  symbol <- '-'
+  size <- 1.5
+  line.type <- 3
+  line.width <- 0.7
+  
+  confidence.intervals <- data.frame(density=df.log.avg.omitted$density, lower=LogGainCiLower(df.log.avg.omitted$density), upper=LogGainCiUpper(df.log.avg.omitted$density))
+  points(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, pch=symbol, cex=size)
+  points(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, pch=symbol, cex=size)
+  lines(x=confidence.intervals$density, y=confidence.intervals$lower, col=ci.col, lty=line.type, lwd=line.width)
+  lines(x=confidence.intervals$density, y=confidence.intervals$upper, col=ci.col, lty=line.type, lwd=line.width)
+  
+  prediction.intervals <- data.frame(density=df.log.avg.omitted$density, lower=LogGainPiLower(df.log.avg.omitted$density), upper=LogGainPiUpper(df.log.avg.omitted$density))
+  points(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, pch=symbol, cex=size)
+  points(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, pch=symbol, cex=size)
+  lines(x=prediction.intervals$density, y=prediction.intervals$lower, col=pi.col, lty=line.type, lwd=line.width)
+  lines(x=prediction.intervals$density, y=prediction.intervals$upper, col=pi.col, lty=line.type, lwd=line.width)
+  
+  legend('topright', legend=c('Least Squares Regression Line', '95% Confidence Interval Bands', '95% Prediction Interval Bands'), col=c('red', ci.col, pi.col), lty=1)
+  
+  print(PredictDensityLeastSquares(38.6))  # 38.6 is the average gain for 0.508 density
+  print(DensityCi(38.6))
+  print(DensityPi(38.6))
+  
+  print(PredictDensityLeastSquares(426.7))  # 426.7 is the average gain for 0.001 density
+  print(DensityCi(426.7))
+  print(DensityPi(426.7))
+}
 ```
 
 
-## Additional Scenario: TODO Title
-Use the additional dataset to construct a model fitting temperature with DOY, latitude, and other reasonable features. Try sketching the least squares line on a scatter plot. We aim to investigate the relationship between temperature and the DOY, and its Latitude.
+## Additional Scenario: Temperature, DOY, and Latitude.
+Use the additional dataset to construct a model fitting temperature with DOY, latitude, and other reasonable features. Try sketching the least squares line on a scatter plot. We aim to investigate the relationship between temperature and the DOY, and its latitude.
 ```{r}
 # Check the correlation
 data <- read.csv('Full Resolution Data/64506420.csv', header=TRUE)
@@ -281,6 +300,7 @@ data_matrix <- as.matrix(data)
 corr_matrix <- cor(data_matrix)
 corr_matrix
 ```
+
 ```{r}
 # least squares line
 fit<-lm(formula = Ts ~ DOY + Lat, data = data)
