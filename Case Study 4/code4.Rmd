@@ -28,9 +28,11 @@ m <- 9  # Number of distinct block densities
 t <- 10  # Number of replicate measurements
 
 #install.packages('L1pack')
-#install.packages("quantreg")
+#install.packages('quantreg')
+#install.packages('ggplot2')
 library(L1pack)  # Used for least absolute deviations regression line
 library(quantreg)  # Used for quantile regression line
+library(ggplot2)
 ```
 
 
