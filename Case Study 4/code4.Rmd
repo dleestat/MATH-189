@@ -199,17 +199,17 @@ legend('topright', legend=c('Least Squares Regression Line', '95% Confidence Int
 
 
 # 95% prediction and confidence intervals of density using gain
-end.points <- c(-1, 3)  # Interval to search the root in
+interval <- c(-1, 3)  # Interval to search the root in
 
 DensityCi <- function(gain) {
-  lower <- uniroot(function(density) log(gain) - LogGainCiLower(density), interval=end.points)[[1]]
-  upper <- uniroot(function(density) log(gain) - LogGainCiUpper(density), interval=end.points)[[1]]
+  lower <- uniroot(function(density) log(gain) - LogGainCiLower(density), interval=interval)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainCiUpper(density), interval=interval)[[1]]
   c(lower, upper)
 }
 
 DensityPi <- function(gain) {
-  lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), end.points)[[1]]
-  upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), end.points)[[1]]
+  lower <- uniroot(function(density) log(gain) - LogGainPiLower(density), interval=interval)[[1]]
+  upper <- uniroot(function(density) log(gain) - LogGainPiUpper(density), interval=interval)[[1]]
   c(lower, upper)
 }
 
@@ -223,7 +223,7 @@ DensityPi(38.6)
 
 PredictDensityLeastSquares(426.7)  # 426.7 is the average gain for 0.001 density
 PredictDensityLad(426.7)
-PredictDensityQuant(38.6)
+PredictDensityQuant(426.7)
 DensityCi(426.7)
 DensityPi(426.7)
 ```
