@@ -1,5 +1,5 @@
 ---
-title: 'CASE STUDY 4:'
+title: 'CASE STUDY 4: CALIBRATING A SNOW GAUGE'
 output: html_notebook
 ---
 
