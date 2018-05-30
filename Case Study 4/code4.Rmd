@@ -1,5 +1,5 @@
 ---
-title: 'CASE STUDY 4:'
+title: 'CASE STUDY 4: CALIBRATING A SNOW GAUGE'
 output: html_notebook
 ---
 
@@ -28,9 +28,11 @@ m <- 9  # Number of distinct block densities
 t <- 10  # Number of replicate measurements
 
 #install.packages('L1pack')
-#install.packages("quantreg")
+#install.packages('quantreg')
+#install.packages('ggplot2')
 library(L1pack)  # Used for least absolute deviations regression line
 library(quantreg)  # Used for quantile regression line
+library(ggplot2)
 ```
 
 
@@ -301,6 +303,7 @@ corr_matrix
 ```
 
 ```{r}
+library(ggplot2)
 # Group by DOY and average replicated measurements
 data$DOY <- round(data$DOY,0)
 data.avg = aggregate(list(data=data[,c('Ts','Lat')]), by=list(DOY=data$DOY), FUN=mean)
@@ -322,7 +325,9 @@ summary(fit2)
 
 # Polynomial Regression Line
 fit3<-lm(formula = data.Ts ~ DOY + data.Lat, data = data.avg)
+fit4<-lm(formula = data.Ts ~ data.Lat + DOY, data = data.avg)
 summary(fit3)
+summary(fit4)
 
 qqnorm(fit2$residuals, main=paste('Normal Q-Q Plot with', title.residuals1), cex.main=1)
 qqline(fit2$residuals, col='red')
