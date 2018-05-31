@@ -1,0 +1,140 @@
+---
+title: "Math 189/289 Lab 9"
+author: "Jiaqi Guo"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+  
+We are going to investigate polynomial regression today. To start, we first define what polynomial regression is,
+$$ y = \beta_0 + \beta_1 x + \beta_2 x^2 + \beta_3 x^3 + \cdots + \beta_p x^p + \epsilon. $$
+The greater the degree of the polynomial $p$ is, the richer the model is. However, it may not be one's best interest to keep increasing the degree of the polynomial
+
+# Polynomial Regression
+
+We will use the *04cars* dataset, which is the 2004 New Car and Truck Data, available from http://ww2.amstat.org/publications/jse/jse_data_archive.htm. For convenience, the file *04cars.rda* is available for download. The *.rda* file has been cleaned and prepared for direct application in R. Please make sure you have the data file stored in the working directory before continuing. 
+```{r}
+load("04cars.rda")
+head(dat)
+attach(dat)
+```
+We will be focusing on two of the variables only, *Retail_Price* and *Horsepower*. Let's take a look at the data points.
+```{r}
+plot(Horsepower, Retail_Price, pch=16)
+```
+The scatterplot matches with our intuition, as we expect the retail price of a vehicle to be higher if it has a larger horsepower. However, we may not be certain whether this is a linear relationship or a quadratic relationship. 
+
+In such case, our remedy is polynomial regression. To start, we will first look at a degree 1 and 2 examples.
+```{r}
+fit.d1 <- lm(Retail_Price ~ Horsepower)
+fit.d2 <- lm(Retail_Price ~ poly(Horsepower, 2, raw=TRUE))
+pts <- seq(0, 600, length.out=100)
+val.d1 <- predict(fit.d1, data.frame(Horsepower=pts))
+val.d2 <- predict(fit.d2, data.frame(Horsepower=pts))
+plot(Horsepower, Retail_Price, pch=16)
+lines(pts, val.d1, col="blue", lwd=2)
+lines(pts, val.d2, col="red", lwd=2)
+```
+The degree 1 polynomial fit is exactly the same linear regression that we have studied two weeks ago. The degree 2 polynomial is a quandratic fit to the data. The quadratic fit is slightly better one can argue. In fact, we can verify the claim using $R^2$ of the 2 fits.
+```{r}
+summary(fit.d1)$r.squared
+summary(fit.d2)$r.squared
+```
+
+However, as we talked about earlier, $R^2$ is not a good measure, when we compare two models of different model complexity. In fact, if one increases the degree of polynomial, $R^2$ increases as well.
+```{r}
+d.max = 30
+R.square = rep(NA, d.max)
+for (d in 1:d.max){
+	fit = lm(Retail_Price ~ poly(Horsepower, d, raw=TRUE))
+	R.square[d] = summary(fit)$r.squared
+}
+plot(1:d.max, R.square, xlab = "Degree", ylab = "R-squared", lwd = 2, col = "blue", pch = 5)
+lines(1:d.max, R.square, type='l', lwd = 2, col = "blue")
+```
+We can also take a look at the actual fits of the polynomials ranging from degree 1 to 10.
+```{r}
+plot(Horsepower, Retail_Price, pch = 16)
+pts <- seq(0, 600, length.out=100)
+for (d in 1:10){
+	fit <- lm(Retail_Price ~ poly(Horsepower, d, raw=TRUE))
+	val <- predict(fit, data.frame(Horsepower = pts))
+	lines(pts, val, col=rainbow(10)[d], lwd = 2)
+}
+```
+Obviously, this shows that even though polynomial models of higher degree return larger $R^2$ for the fit, the higher degree model will overfit the data. One can see that the high degree polynomials are very volatile. It does perform well in fitting the data we have at hand, but it will make large errors in predicting data not currently in the dataset.
+
+So how do we choose the degree of our polynomial regression? A common approach is to stop at a low degree which $R^2$ does not increase much further. For example, from our example, we see that $R^2$ increase from about 0.68 to over 0.72 at degree 2, which is actually the biggest single step gain. But then one might also argue that degree 8 has achieved 0.76 in $R^2$. If we take a look at degree 8 polynomial below, we can see that it is apparently overfitting.
+```{r}
+plot(Horsepower, Retail_Price, pch = 16)
+pts <- seq(0, 600, length.out=100)
+fit.d8 <- lm(Retail_Price ~ poly(Horsepower, 8, raw=TRUE))
+val.d8 <- predict(fit.d8, data.frame(Horsepower = pts))
+lines(pts, val.d8, col="red", lwd = 2)
+```
+
+# Model Selection
+The degree selection may sound vague. Trying to determine it graphically is sometimes hard. There are other methods in determining the right model. Here we will take cross validation for example, and go over the concept step by step.
+
+The term cross validation usually comes with a parameter. A $k$-fold cross validation is one that divides the available dataset into $k$ piles. If a dataset has $n$ points, then each pile has $n/k$ data points, assuming there's no remainders. In our case, $n = 428$, common choices for $k$ are 5 or 10. Let's do a 5-fold cross validation.
+
+Each round, one pile is going to be used as the validation set, and the rest being training set. Training set consists of the ones we use in fitting, while we use validation set to evaluate the model in each round. Rotating through all the $k=5$ piles gives us $k=5$ rounds in total, which also gives us $k=5$ evaluations of the model we have chosen. Usually an average is taken as the final measure of how well the model performs. Let's implement this in R for the linear model.
+```{r}
+k <- 5
+n <- 428
+val.size <- floor(n/k)
+cv.mse <- rep(0, k)
+for (round in 1:k){
+  if (round == k){
+    val.ind <- ((round-1)*val.size + 1):n
+  }else{
+    val.ind <- ((round-1)*val.size + 1):(round*val.size)
+  }
+  y <- Retail_Price[-val.ind]
+  x <- Horsepower[-val.ind]
+  fit <- lm(y ~ x)
+  y.hat <- predict(fit, data.frame(x = Horsepower[val.ind]))
+  cv.mse[round] <- sum((Retail_Price[val.ind] - y.hat)^2)/length(val.ind)
+}
+mean(cv.mse)
+```
+
+Notice that we took mean squared error (MSE) as our evaluation criterion. Now let's see how the measure changes with the degree of polynomials. We first put the cross validation procedure into a function.
+```{r}
+cv.degree.d <- function(k, n, d){
+  val.size <- floor(n/k)
+  cv.mse <- rep(0, k)
+  for (round in 1:k){
+    if (round == k){
+      val.ind <- ((round-1)*val.size + 1):n
+    }else{
+      val.ind <- ((round-1)*val.size + 1):(round*val.size)
+    }
+    y <- Retail_Price[-val.ind]
+    x <- Horsepower[-val.ind]
+    fit <- lm(y ~ poly(x, d, raw=TRUE))
+    y.hat <- predict(fit, data.frame(x = Horsepower[val.ind]))
+    cv.mse[round] <- sum((Retail_Price[val.ind] - y.hat)^2)/length(val.ind)
+  }
+  return (mean(cv.mse))
+}
+```
+We now have the necessary tools to take a look at the MSE of polynomial model of degrees from 1 to 9. 
+```{r}
+k <- 5
+n <- 428
+d.max <- 9
+mse <- rep(0, d.max)
+for (d in 1:d.max){
+  mse[d] <- cv.degree.d(k, n, d)
+}
+plot(1:d.max, mse, xlab = "Degree", ylab = "MSE", lwd = 2, col = "blue", pch = 5)
+lines(1:d.max, mse, type='l', lwd = 2, col = "blue")
+```
+As shown with the plot, the cross validation MSE achieves minimum at degree 3. In other words, we should stop at degree 3 polynomial as the optimal degree. Increasing the degree further leads to overfitting.
+
+This is known as the mean variance tradeoff. Assume the underlying model takes the form 
+$$ y = f(x) + \epsilon, $$
+where $\epsilon$ has mean 0 and variance $\sigma^2$. Then if we fit a model with $\hat f(x)$. We have the mean squared error as the following,
+$$\mathbb{E} \left[ \left( y - \hat f(x) \right)^2 \right] = \mathbb{E} \left[ \left( f(x) + \epsilon - \hat f(x) \right)^2 \right] = \mathbb{E} \left[ \left( f(x) - \hat f(x) \right)^2 + \epsilon \left( f(x) - \hat f(x) \right) + \epsilon^2  \right] = \text{Var} \left( \hat f(x) \right) + \left[ \mathbb{E} \left( f(x) - \hat f(x) \right) \right]^2 + \sigma^2.$$
+The part $\text{Var}\left( \hat f(x) \right)$ is the variance of our fitted model, whereas the $\left[ \mathbb{E} \left( f(x) - \hat f(x) \right) \right]^2$ is the bias squared. The $\sigma^2$ is the irreducible error. The more complex the model $\hat f(x)$ is, it will be able to reduce the bias better. However, the more complex model will lead to a larger variance.
