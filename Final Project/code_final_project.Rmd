@@ -16,68 +16,128 @@ Datasets for this study are
 
 
 ## Question
-The aim of this lab is to provide a simple procedure for converting gain into density when the gauge is in operation. Keep in mind that the experiment was conducted by varying density and measuring the response in gain, but when the gauge is ultimately in use, the snow-pack density is to be estimated from the measured gain.
+The goal of this project is to build a recommendation system helping donors to connect to the projects they are interested to donate. We want to pair up donors to the classroom requests that will most motivate them to make an additional gift. If DonorsChoose.org can motivate even a fraction of those donors to make another donation, that could have a huge impact on the number of classroom requests fulfilled.
 
-
-## Scenario 1
+## Install packages
 ```{r}
-#df[sample(nrow(df), 10000), ]
+#install.packages("mapproj")
+#install.packages("ggmap")
+#install.packages("DeducerSpatial")
 #install.packages('L1pack')
 #install.packages('quantreg')
 #install.packages('ggplot2')
 #library(L1pack)  # Used for least absolute deviations regression line
 #library(quantreg)  # Used for quantile regression line
 #library(ggplot2)
-```
-## Scenario 2
-```{r}
 library("dplyr")
-Donations <- read.csv("io/Donations.csv")
-Donors <- read.csv("io/Donors.csv")
-Donations <- Donations[,c('Donor.ID', 'Donation.Amount')]
-Donors <- Donors[,c('Donor.ID', 'Donor.Is.Teacher')]
-df_merged <- merge(Donations,Donors,by="Donor.ID")
-teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
-nonteacher <- df_merged[which(df_merged$Donor.Is.Teacher=='No'),]
+
 ```
 
+## Import Dataset
 ```{r}
-#true.fraction <- as.numeric(table(Donors$Donor.Is.Teacher)[2])
-#print(paste0("The true fraction of donors that are teachers is ", true.fraction))
-#sample <- df_merged[sample(nrow(Donations),10000),]
+Donations <- read.csv("io/Donations.csv")
+Donors <- read.csv("io/Donors.csv")
+projects <- read.csv("io/Projects.csv")
+
+# Merge Data Frame
+# df_merged <- merge(Donations,Donors,by="Donor.ID")
+# write.csv(df_merged, "io/donations_donors.csv")
+# projects <- projects[-c(6,7,8,9)]
+# write.csv(projects, "io/projects_mini.csv")
+
+df_merged <- read.csv("io/donations_donors.csv")
+projects <- read.csv("io/projects_mini.csv")
+```
+
+
+## Scenario 1
+Question:Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
+```{r}
+
+```
+
+
+## Scenario 2
+Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern.(Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher)
+
+```{r}
+teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
+nonteacher <- df_merged[which(df_merged$Donor.Is.Teacher=='No'),]
 teacher_money_amount <- teacher$Donation.Amount
 nonteacher_money_amount <- nonteacher$Donation.Amount
 ```
 
+2.1 Wilcoxon test- test for the difference in mean
 ```{r}
-# two-sided test
-# null: true shift is zero, teacher donates the same as non-teachers
-wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE)
-```
-
-```{r}
-# one-sided test- test for difference less than 0
-# null: true shift is less than 0, teacher donates less than non-teachers
-wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE, alternative = "greater")
-```
-
-```{r}
-# one-sided test- test for difference greater than 0
+# one-sided test- test for difference greater than or equal to 0
 # null: true shift is greater than 0 teacher donates more than non-teachers
 wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE, alternative = "less")
 ```
 
+2.2 True fraction of teacher donors in the donor population
+```{r}
+true.fraction <- round(as.numeric(table(Donors$Donor.Is.Teacher)[2])/nrow(Donors)*100, 3)
+print(paste0("The true fraction of teacher donors is ", true.fraction, "%"))
+```
+
 ## Scenario 3
+Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
 ```{r}
 
 ```
 
 ## Scenario 4
+Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
+
+4.1 On average, find out the states that have the most donation per transaction.
+```{r}
+# Figure out the rank of total donation amount for each state
+state.total <-  aggregate(list(donations=df_merged$Donation.Amount), by=list(states=df_merged$Donor.State), FUN= sum)
+state.total <-  state.total[order(state.total$donations, decreasing = TRUE),]
+
+# Figure out the rank of average donation amount per transaction for each state
+state.avg <-  aggregate(list(donations=df_merged$Donation.Amount), by=list(states=df_merged$Donor.State), FUN= mean)
+state.avg <- state.avg[order(state.avg$donations, decreasing = TRUE),]
+summary(state.avg$donations)
+
+state.avg$tier <- 0
+state.avg[which(state.avg$donations<=52.77),'tier'] <- 'tier 3'
+state.avg[which((state.avg$donations>52.77) &(state.avg$donations<=65.50)),'tier'] <- 'tier 2'
+state.avg[which(state.avg$donations>65.50),'tier'] <- 'tier 1'
+```
+
+```{r}
+# Ridge
+#install.packages("MASS")
+
+library(MASS)
+
+state.avg[order(state.avg$Donation.Amount),]
+ols = lm(formula = Donation.Amount ~  Donor.Is.Teacher + Donation.Included.Optional.Donation , data = df_merged)
+summary(ols)
+```
+
+```{r}
+# MM = model.matrix(ols)
+# image(x = 1:ncol(MM), y = 1:nrow(df_merged), z=t(MM))
+```
+
+```{r}
+# Lasso
+#install.packages("glmnet")
+library("glmnet")
+set.seed(2018)
+
+```
+```{r}
+sample <- df_merged[sample(nrow(df_merged), 10000), ]
+```
+
+## Scenario 5
+
 ```{r}
 
 ```
 
-## Scenario 4
 ```{r}
-
 ```
