@@ -1,0 +1,207 @@
+---
+title: "Math 189/289 Lab 10"
+author: "Alex Hanbo Li and Jiaqi Guo"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+We are going to talk about ridge regression and lasso regression today.
+
+# Ridge regression
+## Theory
+One way to control the complexity of a model is to penalize its magnitude. For example, in a linear regression problem
+$$
+\min_{\beta \in \mathbb{R}^p} \sum_{i=1}^n (y_i - x_i^\top \beta)^2,
+$$
+we can control the magnitude of coefficients $\beta$. Of course the magnitude of $\beta$ could be defined in different ways, e.g. two-norm $\|\beta\|_2$, one-norm $\|\beta\|_1$ and infinity-norm $\|\beta\|_{\infty}$. The ridge regression involves the two-norm penalty:
+$$
+\min_{\beta \in \mathbb{R}^p} \sum_{i=1}^n (y_i - x_i^\top \beta)^2 + \lambda \|\beta\|_2^2
+$$
+where $\lambda$ is a tuning parameter controling the level of regularization. Denote $X$ to be the $n$ by $p$ design matrix with rows to be $x_i^\top$, and $Y$ be the $n$ by 1 vector of $y_i$'s. Assume $X^\top X + \lambda I$ is invertible, we have an explicit solution to the ridge regression problem
+$$
+\hat \beta_{ridge} = (X^\top X + \lambda I)^{-1}X^\top Y.
+$$
+Recall that the solution to the ordinary least square regression is (assuming invertibility of $X^\top X$)
+$$
+\hat \beta_{ols} = (X^\top X)^{-1}X^\top Y.
+$$
+Two facts: When $\lambda \to 0$, $\hat \beta_{ridge} \to \hat \beta_{ols}$; when $\lambda \to \infty$, $\hat \beta_{ridge} \to 0$.
+
+In the special case when $X$ is orthonormal (i.e. the columns of $X$ are orthonormal), we have
+$$
+\hat \beta_{ridge} = \frac{\hat \beta_{ols}}{1 + \lambda}.
+$$
+So we can see ridge estimator has an extra $1/(1 + \lambda)$ shrinkage factor. Therefore, there is bias on the ridge estimator.
+
+## Fit the model
+First, let's look at the package `MASS` for ridge regression.
+```{r}
+library(MASS)
+
+# Generating the data
+set.seed(20170315)
+N <- 100      # Sample size
+
+x1 <- runif(n=N)
+x2 <- runif(n=N)
+x3 <- runif(n=N)
+x3c <- 10*x1 + x3 # New variable
+ep <- rnorm(n=N)
+y <- x1 + x2 + ep 
+data <- cbind.data.frame(x1,x2,x3,x3c,y)
+
+# OLS fit of 3-variable model using independent x3
+ols <- lm(y~ x1 + x2 + x3, data = data)
+summary(ols)
+
+
+# OLS fit of 3-variable model using correlated x3.
+olsc <- lm(y~ x1 + x2 + x3c, data = data)
+summary(olsc)
+
+# Ridge regression using independent variables
+ridge <- lm.ridge (y ~ x1+x2+x3, data = data, lambda = seq(0, 50, .001))
+plot(ridge)
+select(ridge)
+
+# Ridge regression using correlated variables
+ridgec <- lm.ridge (y ~ x1+x2+x3c, data = data, lambda = seq(0, 50, .001))
+plot(ridgec)
+select(ridgec)
+```
+
+A better package is `glmnet`.
+```{r}
+# install.packages("ISLR")
+# install.packages("glmnet")
+library(ISLR)
+library(glmnet)
+
+Hitters=na.omit(Hitters)
+x=model.matrix(Salary~.-1,data=Hitters) 
+y=Hitters$Salary
+```
+
+The ridge-regression model is fitted by calling the glmnet function with $\alpha = 0$. It makes a plot as a function of log of lambda, and is plotting the coefficients.
+```{r}
+fit.ridge=glmnet(x,y,alpha=0)
+plot(fit.ridge,xvar="lambda",label=TRUE)
+```
+
+## Model selection
+We will do cross-validation to select the best $\lambda$.
+```{r}
+cv.ridge=cv.glmnet(x,y,alpha=0)
+plot(cv.ridge)
+```
+The left vertical line is the one with the minimum MSE. The right vertical line is within one standard error of the minimum, which is a slightly more restricted model that does almost as well as the minimum. We will go for the second one to prevent overfitting.
+
+At the top of the plot, you actually see how many non-zero variables coefficients are in the model. In this case, all 20 variables are included in the model (19 variables plus the intercept) and no coefficient is zero.
+
+# Lasso
+Instead of $L_2$ regularization, LASSO uses $L_1$ penalization, that is,
+$$
+\min_{\beta \in \mathbb{R}^p} \sum_{i=1}^n (y_i - x_i^\top \beta)^2 + \lambda \|\beta\|_1. 
+$$
+Because of the nature of $L_1$ norm, LASSO tends to give more sparse solution than ridge regression. This is typically useful in high-dimensional setting when the true model is actually a low-dimensional embedding.
+
+## Fit the model
+To fit the lasso model, you can specify $\alpha = 1$ to the fitting function.
+```{r}
+fit.lasso=glmnet(x,y,alpha=1)
+plot(fit.lasso,xvar="lambda",label=TRUE)
+```
+
+## Cross validation to choose $\lambda$
+```{r}
+cv.lasso=cv.glmnet(x,y)
+plot(cv.lasso)
+cv.lasso$lambda.min
+cv.lasso$lambda.1se
+```
+We can extract the coefficients.
+```{r}
+coef(cv.lasso)
+```
+
+```{r}
+n <- nrow(x)
+train <- sample(1:n, size = floor(0.6*n), replace = FALSE) # use 60% data for training
+lasso.tr=glmnet(x[train,],y[train], alpha = 1)
+lasso.tr
+pred=predict(lasso.tr,x[-train,])
+
+# calculate the mse
+rmse= sqrt(apply((y[-train]-pred)^2,2,mean))
+plot(log(lasso.tr$lambda),rmse,type="b",xlab="Log(lambda)")
+lam.best=lasso.tr$lambda[order(rmse)[1]]
+lam.best
+coef(lasso.tr,s=lam.best)
+```
+
+# Random forest
+Random forest is an ensemble of decision trees. It's kind of majority vote. Since the formulas for building a single decision tree are the same every time, some source of randomness is required to make these trees different from one another. Random Forests do this in two ways:
+
+## Bagging: bootstrap aggregating
+Bagging takes a randomized sample of the rows in your training set, with replacement.
+
+## Sampling the variables
+Instead of looking at the entire pool of available variables, Random Forests take only a subset of them.
+
+Through these two sources of randomness, the ensemble contains a collection of totally unique trees which all make their classifications differently.
+
+```{r}
+# install.packages('randomForest')
+library(randomForest)
+
+n <- nrow(Hitters)
+train <- sample(1:n, size = floor(0.75*n), replace = FALSE) # use 75% data for training
+rf.fit <- randomForest(Salary ~ ., data = Hitters[train, ], importance = TRUE, ntree = 1000, nodesize = 10)
+```
+The `importance=TRUE` argument allows us to inspect variable importance as we’ll see, and the `ntree` argument specifies how many trees we want to grow.
+```{r}
+varImpPlot(rf.fit)
+```
+From the variable importance plot, *CHits*, *CAtBat*, *CRuns*, and *CRBI* are the most important factors for a player's salary.
+
+Now we can use the random forest model to make predictions.
+```{r}
+rf.pred <- predict(rf.fit, Hitters[-train, ], type = 'response')
+# MSE
+mean((rf.pred - Hitters[-train, ]$Salary)^2)
+# MAD
+mean(abs(rf.pred - Hitters[-train, ]$Salary))
+# relative
+mean(abs(rf.pred - Hitters[-train, ]$Salary)/Hitters[-train, ]$Salary)
+```
+
+# K-Means clustering
+As a clustering method, K-Means tries to cluster data points based on their similarity. The algorithm requires only one parameter, the number of clusters $k$. Formally, given observations $x_1, x_2, \cdots, x_n$, k-means clusters the $n$ observations into $k$ sets $S_1, S_2, \cdots, S_k$. The minimization problem is
+$$ \min_{S_1, S_2, \cdots, S_k} \sum_{j=1}^k \sum_{\{i|x_i \in S_j\}} \|x_i-\mu_j\|^2, $$
+where $\mu_j$ is the centroid of set $S_j$. The algorithm initializes with $k$ centroids, and labels each observation by the closest centroid. Then the algorithm iterates between two steps: update centroids within clusters and reassign each data point to the cluster whose centroid is the closest.
+
+The following is an example with iris dataset.
+```{r}
+library(datasets)
+head(iris)
+```
+Here is a visualization of the iris dataset.
+```{r}
+library(ggplot2)
+ggplot(iris, aes(Sepal.Length, Petal.Length, color = Species)) + geom_point()
+```
+Now we apply k-means clustering.
+```{r}
+set.seed(314)
+irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
+irisCluster
+```
+Let's take a look at how the clustering algorithm performs.
+```{r}
+table(irisCluster$cluster, iris$Species)
+```
+```{r}
+irisCluster$cluster <- as.factor(irisCluster$cluster)
+ggplot(iris, aes(Sepal.Length, Petal.Length, color = irisCluster$cluster)) + geom_point()
+```
