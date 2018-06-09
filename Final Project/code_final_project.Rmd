@@ -102,7 +102,6 @@ Question: Which state has the highest donor to population ratio? Is the amount o
 
 ## Scenario 4
 Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
-
 4.1 In total, find out the states that have the most donations.
 ```{r}
 # Figure out the rank of total donation amount for each state
@@ -119,43 +118,83 @@ state.avg <- state.avg[order(state.avg$donations, decreasing = TRUE),]
 summary(state.avg$donations)
 ```
 
-4.3 Ridge Regression on predicting how much a donor will donate 
+4.3 Least Square Regression on predicting how much a donor will donate 
+```{r}
+sample <- merged[sample(nrow(merged), 100000), ]
+sample=na.omit(sample)
+ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
+summary(ols)
+```
+4.4 Ridge Regression on predicting how much a donor will donate 
 ```{r}
 # Ridge
 #install.packages("MASS")
-
 library(MASS)
-
-state.avg[order(state.avg$Donation.Amount),]
-ols = lm(formula = Donation.Amount ~  Donor.Is.Teacher + Donation.Included.Optional.Donation , data = df_merged)
-summary(ols)
+ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
+plot(ridge)
+select(ridge)
 ```
-
 ```{r}
-# MM = model.matrix(ols)
-# image(x = 1:ncol(MM), y = 1:nrow(df_merged), z=t(MM))
-```
-
-```{r}
-# Lasso
-#install.packages("glmnet")
+# install.packages("ISLR")
+# install.packages("glmnet")
 library("glmnet")
+library(ISLR)
 set.seed(2018)
 
+sample = sample[c(4,7,10,11,17,18)]
+x=model.matrix(donations~.-1,data=sample) 
+y=sample$donations
+fit.ridge=glmnet(x,y,alpha=0)
+plot(fit.ridge,xvar="lambda",label=TRUE)
+cv.ridge=cv.glmnet(x,y,alpha=0)
+plot(cv.ridge)
 ```
 
+4.5 Lasso Regression on predicting how much a donor will donate 
 ```{r}
-sample <- df_merged[sample(nrow(df_merged), 10000), ]
-#
-state.avg$tier <- 0
-state.avg[which(state.avg$donations<=52.77),'tier'] <- 'tier 3'
-state.avg[which((state.avg$donations>52.77) &(state.avg$donations<=65.50)),'tier'] <- 'tier 2'
-state.avg[which(state.avg$donations>65.50),'tier'] <- 'tier 1'
+fit.lasso=glmnet(x,y,alpha=1)
+plot(fit.lasso,xvar="lambda",label=TRUE)
+cv.lasso=cv.glmnet(x,y)
+plot(cv.lasso)
+coef(cv.lasso)
+n <- nrow(x)
+train <- sample(1:n, size = floor(0.6*n), replace = FALSE) # use 60% data for training
+lasso.tr=glmnet(x[train,],y[train], alpha = 1)
+lasso.tr
+pred=predict(lasso.tr,x[-train,])
+# calculate the mse
+rmse= sqrt(apply((y[-train]-pred)^2,2,mean))
+plot(log(lasso.tr$lambda),rmse,type="b",xlab="Log(lambda)")
+lam.best=lasso.tr$lambda[order(rmse)[1]]
+lam.best
+coef(lasso.tr,s=lam.best)
 ```
 
 ## Scenario 5
+Forests/ Bagging(Include Cross Validation)/ clustering - Predict how likely the donor is going to donate. 
 
+5.1 Random Forests
 ```{r}
+#install.packages('randomForest')
+library(randomForest)
 
+n <- nrow(sample)
+train <- sample(1:n, size = floor(0.75*n), replace = FALSE) # use 75% data for training
+rf.fit <- randomForest(donations ~ ., data = sample[train, ], importance = TRUE, ntree = 1000, nodesize = 10)
+varImpPlot(rf.fit)
+rf.pred <- predict(rf.fit, sample[-train, ], type = 'response')
+# MSE
+print(mean((rf.pred - sample[-train, ]$donations)^2))
+print(mean(abs(rf.pred - sample[-train, ]$donations)))
+print(mean(abs(rf.pred - sample[-train, ]$donations)/sample[-train, ]$donations))
+```
+
+5.2 K-Mean Clustering
+```{r}
+library(ggplot2)
+ggplot(sample, aes(School.Percentage.Free.Lunch,donations, color = School.Metro.Type)) + geom_point()
+set.seed(314)
+irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
+irisCluster
 ```
 
