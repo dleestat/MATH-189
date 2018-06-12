@@ -28,25 +28,24 @@ output: html_notebook
 
 ```{r}
 #install.packages(data.table)
-library(data.table)
+suppressMessages(library(data.table))
 ```
-```{r}
-donations <- fread('io/Donations.csv')
-donors <- fread('io/Donors.csv')
-projects <- fread('io/Projects.csv')
-resources <- fread('io/Resources.csv')
-schools <- fread('io/Schools.csv')
-teachers <- fread('io/Teachers.csv')
+```{r results='hide'}
+donations <- fread('io/Donations.csv')                                      # 583.03 MB
+donors    <- fread('io/Donors.csv', colClasses=c('Donor Zip'='character'))  # 118.24 MB
+projects  <- fread('io/Projects.csv')                                       # 2.39 GB
+resources <- fread('io/Resources.csv')                                      # 781.39 MB
+schools   <- fread('io/Schools.csv')                                        # 9.21 MB
+teachers  <- fread('io/Teachers.csv')                                       # 18.66 MB
 ```
+
 ```{r}
 columns <- NULL
 for (table in list(donations, donors, projects, resources, schools, teachers)) {
-  columns <- sort(unique(c(columns, colnames(table))))
+  columns <- c(columns, colnames(table))
 }
-columns
-sort(unique(projects$'Project Subject Subcategory Tree'))
+sort(unique(columns))
 ```
-
 
 
 ## Import Dataset
