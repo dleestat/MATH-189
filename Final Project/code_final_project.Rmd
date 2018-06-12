@@ -3,20 +3,9 @@ title: 'FINAL PROJECT'
 output: html_notebook
 ---
 
-This study allows us to revisit/renew
-
-1. Regression modeling
-2. Properties of Least Squares/Fitting "a line"
-3. Multiple observation
-
-Datasets for this study are
-
-1. The main file: gauge.txt
-2. Supplementary large-scale files: download the following folder Full Resolution Data.zip More information about the supplementary file can be found at http://iabp.apl.washington.edu/data.html as well as http://nsidc.org/data/G00791
-
-
 ## Question
 The goal of this project is to build a recommendation system helping donors to connect to the projects they are interested to donate. We want to pair up donors to the classroom requests that will most motivate them to make an additional gift. If DonorsChoose.org can motivate even a fraction of those donors to make another donation, that could have a huge impact on the number of classroom requests fulfilled.
+
 
 ## Install packages
 ```{r}
@@ -30,7 +19,6 @@ The goal of this project is to build a recommendation system helping donors to c
 #library(quantreg)  # Used for quantile regression line
 #library(ggplot2)
 library("dplyr")
-
 ```
 
 ## Import Dataset
@@ -94,11 +82,13 @@ true.fraction <- round(as.numeric(table(Donors$Donor.Is.Teacher)[2])/nrow(Donors
 print(paste0("The true fraction of teacher donors is ", true.fraction, "%"))
 ```
 
+
 ## Scenario 3
 Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
 ```{r}
 
 ```
+
 
 ## Scenario 4
 Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
@@ -125,6 +115,7 @@ sample=na.omit(sample)
 ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
 summary(ols)
 ```
+
 4.4 Ridge Regression on predicting how much a donor will donate 
 ```{r}
 # Ridge
@@ -170,6 +161,7 @@ lam.best
 coef(lasso.tr,s=lam.best)
 ```
 
+
 ## Scenario 5
 Forests/ Bagging(Include Cross Validation)/ clustering - Predict how likely the donor is going to donate. 
 
@@ -197,4 +189,3 @@ set.seed(314)
 irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
 irisCluster
 ```
-
