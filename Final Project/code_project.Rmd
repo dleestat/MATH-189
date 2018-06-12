@@ -39,7 +39,12 @@ schools <- fread('io/Schools.csv')
 teachers <- fread('io/Teachers.csv')
 ```
 ```{r}
-head(projects)
+columns <- NULL
+for (table in list(donations, donors, projects, resources, schools, teachers)) {
+  columns <- sort(unique(c(columns, colnames(table))))
+}
+columns
+sort(unique(projects$'Project Subject Subcategory Tree'))
 ```
 
 
