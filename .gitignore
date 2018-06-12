@@ -1,5 +1,6 @@
 # Custom
-*/*.html
+**/*.html
+**/.DS_Store
 Final\ Project/io/*.csv
 
 # History files
