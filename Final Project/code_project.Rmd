@@ -26,21 +26,23 @@ output: html_notebook
 - *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
 
 
-
-
-## Install packages
 ```{r}
-#install.packages("mapproj")
-#install.packages("ggmap")
-#install.packages("DeducerSpatial")
-#install.packages('L1pack')
-#install.packages('quantreg')
-#install.packages('ggplot2')
-#library(L1pack)  # Used for least absolute deviations regression line
-#library(quantreg)  # Used for quantile regression line
-#library(ggplot2)
-library("dplyr")
+#install.packages(data.table)
+library(data.table)
 ```
+```{r}
+donations <- fread('io/Donations.csv')
+donors <- fread('io/Donors.csv')
+projects <- fread('io/Projects.csv')
+resources <- fread('io/Resources.csv')
+schools <- fread('io/Schools.csv')
+teachers <- fread('io/Teachers.csv')
+```
+```{r}
+head(projects)
+```
+
+
 
 ## Import Dataset
 ```{r}
