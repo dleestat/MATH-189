@@ -42,6 +42,21 @@ schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
 ```{r}
+projects.categorized <- projects[sample(nrow(projects), 10000), list(`Project ID`, `Project Subject Category Tree`)]
+for (row in 1:nrow(projects.categorized)) {
+  categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
+  if (length(categories) > 1) {
+    duplicate <- projects.categorized[row]
+    projects.categorized[row]$`Project Subject Category Tree` <- categories[1]
+    for (category in categories[-1]) {
+      duplicate$`Project Subject Category Tree` <- category
+      projects.categorized <- rbindlist(list(projects.categorized, duplicate))
+    }
+  }
+}
+projects.categorized
+```
+```{r}
 #Donations <- data.table::fread("io/Donations.csv")
 #projects <- data.table::fread("io/projects_mini.csv")
 #schools <-  data.table::fread("io/Schools.csv")[,c(1,3,4)]
@@ -79,28 +94,13 @@ sort(unique(columns))
 
 ```{r}
 print(head(donations))
-nrow(donors)
 print(head(donors))
 print(head(projects))
 print(head(resources))
 print(head(schools))
 print(head(teachers))
 ```
-```{r}
-sample <- projects[1:1000]
-for (row in 1:nrow(sample)) {
-  categories <- unlist(strsplit(sample[row]$`Project Subject Category Tree`, ', '))
-  if (length(categories) > 1) {
-    duplicate <- sample[row]
-    sample[row]$`Project Subject Category Tree` <- categories[1]
-    for (category in categories[-1]) {
-      duplicate$`Project Subject Category Tree` <- category
-      sample <- rbindlist(list(sample, modified))
-    }
-  }
-}
-sample
-```
+
 
 ```{r}
 y <- as.factor(sample$`Project Subject Category Tree`)
