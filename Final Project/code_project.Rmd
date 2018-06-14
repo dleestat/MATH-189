@@ -52,14 +52,13 @@ sort(unique(columns))
 
 ## Import Dataset
 ```{r}
-#Donations <- read.csv("io/Donations.csv")
-#Donors <- read.csv("io/Donors.csv")
-#projects <- read.csv("io/projects_mini.csv")
-#schools <-  read.csv("io/Schools.csv")[,c(1,3,4)]
-#teachers <- read.csv("io/Teachers.csv")
+#Donations <- data.table::fread("io/Donations.csv")
+#projects <- data.table::fread("io/projects_mini.csv")
+#schools <-  data.table::fread("io/Schools.csv")[,c(1,3,4)]
+#teachers <- data.table::fread("io/Teachers.csv")
 
 # Merge Data Frames
-# projects <- read.csv("io/Projects.csv")
+# projects <- data.table::fread("io/Projects.csv")
 # projects <- projects[-c(6,7,8,9)]
 # write.csv(projects, "io/projects_mini.csv")
 # df_merged <- merge(Donations,Donors,by="Donor.ID")
@@ -72,14 +71,35 @@ sort(unique(columns))
 #merged <- merge(merged,projects, by = "Project.ID")
 #merged <- merge(merged,schools, by = "School.ID")
 #write.csv(merged, "io/merged_projects.csv")
-
-# Merged dataframe based on Donation.ID
-df_merged <- read.csv("io/df_merged.csv")
-
-# Merged dataframe based on each Project.ID
-merged <- read.csv("io/merged_projects.csv")
 ```
 
+## Import Merged Dataset
+```{r}
+Donors <- data.table::fread("io/Donors.csv")
+# Merged dataframe based on Donation.ID
+df_merged <- data.table::fread("io/df_merged.csv")
+# Merged dataframe based on each Project.ID
+merged <- data.table::fread("io/merged_projects.csv")
+```
+
+## Extract Unique Category and Subcategory Names
+```{r}
+# 9 Unique Value for Project Category
+unique_category <- c()
+for (i in df_merged$Project.Subject.Category.Tree){
+    a <- strsplit(i, ", ", fixed = FALSE, perl = FALSE, useBytes = FALSE)[[1]]
+    unique_category <- append(unique_category,a)
+    unique_category <- unique(unique_category)
+}
+
+# 30 Unique Value for Project Subcategory
+unique_subcategory <- c()
+for (i in df_merged$Project.Subject.Subcategory.Tree){
+    a <- strsplit(i, ", ", fixed = FALSE, perl = FALSE, useBytes = FALSE)[[1]]
+    unique_subcategory <- append(unique_subcategory,a)
+    unique_subcategory <- unique(unique_subcategory)
+}
+```
 
 ## Scenario 1
 Question:Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
@@ -102,13 +122,21 @@ nonteacher_money_amount <- nonteacher$Donation.Amount
 ```{r}
 # one-sided test- test for difference greater than or equal to 0
 # null: true shift is greater than 0 teacher donates more than non-teachers
+wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE)
 wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE, alternative = "less")
 ```
 
 2.2 True fraction of teacher donors in the donor population
 ```{r}
-true.fraction <- round(as.numeric(table(Donors$Donor.Is.Teacher)[2])/nrow(Donors)*100, 3)
-print(paste0("The true fraction of teacher donors is ", true.fraction, "%"))
+teacher.donor.fraction <- round(as.numeric(table(Donors[,`Donor Is Teacher`])[2])/nrow(Donors)*100, 3)
+print(paste0("The true fraction of teacher donors is ", teacher.donor.fraction, "%"))
+
+# EDA: Check if teacher donors' donation pattern(except for the ones who only donate 1 dollar) follow normal distribution
+t <- sample(teacher$Donation.Amount, 10000)
+tt <- teacher[which(teacher$Donation.Amount<500 & teacher$Donation.Amount>1),6]$Donation.Amount
+qqplot(log(tt), rnorm(length(tt), mean(log(tt)), var(log(tt))))
+abline(0, 1)
+hist(log(tt))
 ```
 
 
@@ -217,4 +245,60 @@ ggplot(sample, aes(School.Percentage.Free.Lunch,donations, color = School.Metro.
 set.seed(314)
 irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
 irisCluster
+```
+
+## Scenario 6
+6.1 Test of Independence Test if the funding duration time is independent of project cost
+```{r}
+# Clean out the outliers
+test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),c(4,12,13,14,16)]
+test$expire.duration <- as.numeric(as.Date(test$Project.Expiration.Date)-as.Date(test$Project.Posted.Date))
+test$funded.duration <- as.numeric(as.Date(test$Project.Fully.Funded.Date)-as.Date(test$Project.Posted.Date))
+test <- test[,-c(3,4,5)]
+outlier.upper <- as.numeric(apply(test, FUN = mean, MARGIN = 2)+ 3* apply(test, FUN = sd, MARGIN = 2))
+outlier.lower <- as.numeric(apply(test, FUN = mean, MARGIN = 2)- 3* apply(test, FUN = sd, MARGIN = 2))
+
+test <- test[which(donations<outlier.upper[1]),]
+test <- test[which(donations>outlier.lower[1]),]
+test <- test[which(Project.Cost<outlier.upper[2]),]
+test <- test[which(Project.Cost>outlier.lower[2]),]
+test <- test[which(expire.duration<outlier.upper[3]),]
+test <- test[which(expire.duration>outlier.lower[3]),]
+test <- test[which(funded.duration<outlier.upper[4]),]
+test <- test[which(funded.duration>outlier.lower[4]),]
+
+# Attempt for a for loop but failed
+for (i in c(1:length(outlier.lower))){
+  test <- test[which(test[,i]>outlier.lower[i]),]
+  test <- test[which(test[,i]<outlier.upper[i]),]
+}
+
+```
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(test[,c(1,2)])
+boxplot(test[,c(3,4)])
+
+par(mfrow=c(2,3))
+hist(test$expire.duration)
+hist(test$funded.duration)
+hist(test$donations)
+hist(test$Project.Cost)
+hist(log(test$Project.Cost))
+hist(log(test$donations))
+
+par(mfrow= c(2,2))
+qqplot(test$donations,test$Project.Cost)
+qqplot(test$donations,test$expire.duration)
+qqplot(test$donations, test$funded.duration)
+qqplot(test$Project.Cost,test$funded.duration)
+
+par(mfrow = c(1,1))
+test_avg <- aggregate(list(donations=test$donations), by=list(Project.Cost=round(test$Project.Cost)), FUN=mean)
+test_avg <- test_avg[which(test_avg<=1590),]
+least.squares <- lm(donations~Project.Cost, data=test_avg)
+plot(test_avg$Project.Cost, test_avg$donations)
+abline(least.squares, col='red')
+summary(least.squares)
 ```
