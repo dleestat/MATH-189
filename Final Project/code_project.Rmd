@@ -26,9 +26,11 @@ output: html_notebook
 - *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
 
 
-```{r}
+```{r results='hide'}
 #install.packages(data.table)
-suppressMessages(library(data.table))
+#install.packages('tree')
+library(data.table)
+library(tree)
 ```
 ```{r results='hide'}
 donations <- fread('io/Donations.csv')                                      # 583.03 MB
