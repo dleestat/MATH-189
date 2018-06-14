@@ -42,7 +42,12 @@ schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
 ```{r}
-projects.categorized <- projects[sample(nrow(projects), 10000), list(`Project ID`, `Project Subject Category Tree`)]
+# Ensure there is only one subject category per row of Projects.csv for further analysis
+# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree
+# projects.categorized is a data.table with Project ID and a row for every unique subject category for that Project ID
+set.seed(0)
+n <- 50000
+projects.categorized <- projects[sample(nrow(projects), n), list(`Project ID`, `Project Subject Category Tree`)]
 for (row in 1:nrow(projects.categorized)) {
   categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
   if (length(categories) > 1) {
@@ -54,16 +59,13 @@ for (row in 1:nrow(projects.categorized)) {
     }
   }
 }
-projects.categorized
 ```
 ```{r}
-#Donations <- data.table::fread("io/Donations.csv")
-#projects <- data.table::fread("io/projects_mini.csv")
-#schools <-  data.table::fread("io/Schools.csv")[,c(1,3,4)]
-#teachers <- data.table::fread("io/Teachers.csv")
+df <- merge(projects.categorized, projects[, -c(4,5,6,7,10,11,15,16,17,18)], by='Project ID')
+df
 
+head(projects)
 # Merge Data Frames
-# projects <- data.table::fread("io/Projects.csv")
 # projects <- projects[-c(6,7,8,9)]
 # write.csv(projects, "io/projects_mini.csv")
 # df_merged <- merge(Donations,Donors,by="Donor.ID")
@@ -76,29 +78,20 @@ projects.categorized
 #merged <- merge(merged,projects, by = "Project.ID")
 #merged <- merge(merged,schools, by = "School.ID")
 #write.csv(merged, "io/merged_projects.csv")
-
-df <- merge(donations, donors, by='Donor ID')
-df
-```
-
-```{r}
-df <- merge(donations, donors, by=`Project ID`)
-df
-
-columns <- NULL
-for (table in list(donations, donors, projects, resources, schools, teachers)) {
-  columns <- c(columns, colnames(table))
-}
-sort(unique(columns))
 ```
 
 ```{r}
 print(head(donations))
+print(colnames(donations))
 print(head(donors))
-print(head(projects))
+print(colnames(donors))
+print(colnames(projects))
 print(head(resources))
+print(colnames(donations))
 print(head(schools))
+print(colnames(donations))
 print(head(teachers))
+print(colnames(donations))
 ```
 
 
