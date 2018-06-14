@@ -3,35 +3,24 @@ title: 'FINAL PROJECT'
 output: html_notebook
 ---
 
-## Kaggle Dataset
-[Data Science For Good: DonorsChoose.org](https://www.kaggle.com/donorschoose/io)
+This study allows us to revisit/renew
 
-Final Project/code_final_project.Rmd
 1. Regression modeling
 2. Properties of Least Squares/Fitting "a line"
 3. Multiple observation
 4. Chi-Square Goodness of Fit Test
 5. Hypothesis Testing: Wilcoxon Signed Rank Test
 
+Datasets for this study are
+
 1. The main file: df_merged.csv
 2. Original Dataset: Donations.csv, Donors.csv, Teachers.csv, Resources.csv, Projects.csv, Schools.csv
 
-*Founded in 2000 by a Bronx history teacher, DonorsChoose.org has raised $685 million for America's classrooms. Teachers at three-quarters of all the public schools in the U.S. have come to DonorsChoose.org to request what their students need, making DonorsChoose.org the leading platform for supporting public education.*
 
-*To date, 3 million people and partners have funded 1.1 million DonorsChoose.org projects. But teachers still spend more than a billion dollars of their own money on classroom materials. To get students what they need to learn, the team at DonorsChoose.org needs to be able to connect donors with the projects that most inspire them.*
+## Question
+The goal of this project is to build a recommendation system helping donors to connect to the projects they are interested to donate. We want to pair up donors to the classroom requests that will most motivate them to make an additional gift. If DonorsChoose.org can motivate even a fraction of those donors to make another donation, that could have a huge impact on the number of classroom requests fulfilled.
 
-*In the second Kaggle Data Science for Good challenge, DonorsChoose.org, in partnership with Google.org, is inviting the community to help them pair up donors to the classroom requests that will most motivate them to make an additional gift. To support this challenge, DonorsChoose.org has supplied anonymized data on donor giving from the past five years. The winning methods will be implemented in DonorsChoose.org email marketing campaigns.*
-
-#### *Problem Statement*
-*DonorsChoose.org has funded over 1.1 million classroom requests through the support of 3 million donors, the majority of whom were making their first-ever donation to a public school. If DonorsChoose.org can motivate even a fraction of those donors to make another donation, that could have a huge impact on the number of classroom requests fulfilled.*
-
-*A good solution will enable DonorsChoose.org to build targeted email campaigns recommending specific classroom requests to prior donors. Part of the challenge is to assess the needs of the organization, uncover insights from the data available, and build the right solution for this problem. Submissions will be evaluated on the following criteria:*
-
-- *Performance - How well does the solution match donors to project requests to which they would be motivated to donate? DonorsChoose.org will not be able to live test every submission, so a strong entry will clearly articulate why it will be effective at motivating repeat donations.*
-- *Adaptable - The DonorsChoose.org team wants to put the winning submissions to work, quickly. Therefore a good entry will be easy to implement in production.*
-- *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
-
-
+## Install packages
 ```{r}
 #install.packages("mapproj")
 #install.packages("ggmap")
@@ -39,8 +28,6 @@ Final Project/code_final_project.Rmd
 #install.packages('L1pack')
 #install.packages('quantreg')
 #install.packages('ggplot2')
-#install.packages(data.table)
-suppressMessages(library(data.table))
 library(L1pack)  # Used for least absolute deviations regression line
 library(quantreg)  # Used for quantile regression line
 library(ggplot2)
@@ -48,24 +35,7 @@ library(dplyr)
 
 ```
 
-```{r results='hide'}
-donations <- fread('io/Donations.csv')                                      # 583.03 MB
-donors    <- fread('io/Donors.csv', colClasses=c('Donor Zip'='character'))  # 118.24 MB
-projects  <- fread('io/Projects.csv')                                       # 2.39 GB
-resources <- fread('io/Resources.csv')                                      # 781.39 MB
-schools   <- fread('io/Schools.csv')                                        # 9.21 MB
-teachers  <- fread('io/Teachers.csv')                                       # 18.66 MB
-```
-
-```{r}
-columns <- NULL
-for (table in list(donations, donors, projects, resources, schools, teachers)) {
-  columns <- c(columns, colnames(table))
-}
-sort(unique(columns))
-```
-
-## Merge Dataset
+## Import Dataset and merge Dataset
 ```{r}
 #Donations <- data.table::fread("io/Donations.csv")
 #projects <- data.table::fread("io/projects_mini.csv")
@@ -170,12 +140,10 @@ abline(0, 1)
 hist(log(tt))
 ```
 
-
 ## Scenario 3
 Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
 ```{r}
 ```
-
 
 ## Scenario 4
 Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
@@ -202,7 +170,6 @@ sample=na.omit(sample)
 ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
 summary(ols)
 ```
-
 4.4 Ridge Regression on predicting how much a donor will donate 
 ```{r}
 # Ridge
@@ -248,7 +215,6 @@ lam.best
 coef(lasso.tr,s=lam.best)
 ```
 
-
 ## Scenario 5
 Forests/ Bagging(Include Cross Validation)/ clustering - Predict how likely the donor is going to donate. 
 
@@ -279,7 +245,7 @@ irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
 ## Scenario 6
 6.1 Test of Independence Test if the funding duration time is independent of project cost
 ```{r}
-# Take out outliers
+# Clean out the outliers
 test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),c(4,12,13,14,16)]
 test$expire.duration <- as.numeric(as.Date(test$Project.Expiration.Date)-as.Date(test$Project.Posted.Date))
 test$funded.duration <- as.numeric(as.Date(test$Project.Fully.Funded.Date)-as.Date(test$Project.Posted.Date))
@@ -295,14 +261,13 @@ test <- test[which(expire.duration<outlier.upper[3]),]
 test <- test[which(expire.duration>outlier.lower[3]),]
 test <- test[which(funded.duration<outlier.upper[4]),]
 test <- test[which(funded.duration>outlier.lower[4]),]
-```
 
-```{r}
-# Attempt for a for loop but failed (DO NOT RUN)
+# Attempt for a for loop but failed
 for (i in c(1:length(outlier.lower))){
   test <- test[which(test[,i]>outlier.lower[i]),]
   test <- test[which(test[,i]<outlier.upper[i]),]
 }
+
 ```
 
 ```{r}
