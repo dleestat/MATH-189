@@ -41,14 +41,84 @@ resources <- fread('io/Resources.csv')                     # 781.39 MB
 schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
+```{r}
+#Donations <- data.table::fread("io/Donations.csv")
+#projects <- data.table::fread("io/projects_mini.csv")
+#schools <-  data.table::fread("io/Schools.csv")[,c(1,3,4)]
+#teachers <- data.table::fread("io/Teachers.csv")
+
+# Merge Data Frames
+# projects <- data.table::fread("io/Projects.csv")
+# projects <- projects[-c(6,7,8,9)]
+# write.csv(projects, "io/projects_mini.csv")
+# df_merged <- merge(Donations,Donors,by="Donor.ID")
+# df_merged <- df_merged[-3]
+# df_merged <- merge(df_merged,projects,by="Project.ID")
+# df_merged <- merge(df_merged,schools,by="School.ID")
+# write.csv(df_merged, "io/df_merged.csv")
+
+#merged <-  aggregate(list(donations=Donations$Donation.Amount), by=list(Project.ID=Donations$Project.ID), FUN= sum)
+#merged <- merge(merged,projects, by = "Project.ID")
+#merged <- merge(merged,schools, by = "School.ID")
+#write.csv(merged, "io/merged_projects.csv")
+
+df <- merge(donations, donors, by='Donor ID')
+df
+```
 
 ```{r}
+df <- merge(donations, donors, by=`Project ID`)
+df
+
 columns <- NULL
 for (table in list(donations, donors, projects, resources, schools, teachers)) {
   columns <- c(columns, colnames(table))
 }
 sort(unique(columns))
 ```
+
+```{r}
+print(head(donations))
+nrow(donors)
+print(head(donors))
+print(head(projects))
+print(head(resources))
+print(head(schools))
+print(head(teachers))
+```
+```{r}
+sample <- projects[1:1000]
+for (row in 1:nrow(sample)) {
+  categories <- unlist(strsplit(sample[row]$`Project Subject Category Tree`, ', '))
+  if (length(categories) > 1) {
+    duplicate <- sample[row]
+    sample[row]$`Project Subject Category Tree` <- categories[1]
+    for (category in categories[-1]) {
+      duplicate$`Project Subject Category Tree` <- category
+      sample <- rbindlist(list(sample, modified))
+    }
+  }
+}
+sample
+```
+
+```{r}
+y <- as.factor(sample$`Project Subject Category Tree`)
+x1 <- as.factor(sample$`Project Type`)
+x2 <- as.numeric(sample$`Project Cost`)
+test <- tree(y~x1+x2, data=sample)
+plot(test)
+text(test)
+```
+
+```{r}
+```
+
+## EDA
+```{r}
+set.seed(0)
+```
+
 
 ## Classification Tree
 -> Probability of donating to the project type
@@ -94,7 +164,7 @@ merged <- data.table::fread("io/merged_projects.csv")
 # 9 Unique Value for Project Category
 unique_category <- c()
 for (i in df_merged$Project.Subject.Category.Tree){
-    a <- strsplit(i, ", ", fixed = FALSE, perl = FALSE, useBytes = FALSE)[[1]]
+    a <- strsplit(i, ", ")[[1]]
     unique_category <- append(unique_category,a)
     unique_category <- unique(unique_category)
 }
@@ -102,7 +172,7 @@ for (i in df_merged$Project.Subject.Category.Tree){
 # 30 Unique Value for Project Subcategory
 unique_subcategory <- c()
 for (i in df_merged$Project.Subject.Subcategory.Tree){
-    a <- strsplit(i, ", ", fixed = FALSE, perl = FALSE, useBytes = FALSE)[[1]]
+    a <- strsplit(i, ", ")[[1]]
     unique_subcategory <- append(unique_subcategory,a)
     unique_subcategory <- unique(unique_subcategory)
 }
@@ -116,7 +186,7 @@ Question:Is there a seasonal pattern of donations? Is the total amount of receiv
 
 
 ## Scenario 2
-Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern.(Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher)
+Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern (Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher).
 
 ```{r}
 teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
