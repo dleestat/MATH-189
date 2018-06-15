@@ -42,8 +42,16 @@ schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
 ```{r}
+print(donations)
+print(donors)
+print(projects)
+print(resources)
+print(schools)
+print(teachers)
+```
+```{r}
 # Ensure there is only one subject category per row of Projects.csv for further analysis
-# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree
+# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree columns
 # projects.categorized is a data.table with Project ID and a row for every unique subject category for that Project ID
 set.seed(0)
 n <- 50000
@@ -60,6 +68,19 @@ for (row in 1:nrow(projects.categorized)) {
   }
 }
 ```
+```{r}
+# 9 unique project subject categories
+projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
+```
+
+
+
+## Text Mining
+```{r}
+texts <- merge(projects.categorized, projects[,c(1,8,9)], by='Project ID')[,-1]
+texts[`Project Subject Category Tree`=='Warmth']
+```
+
 ```{r}
 df <- merge(projects.categorized, projects[, -c(4,5,6,7,10,11,15,16,17,18)], by='Project ID')
 df
@@ -80,19 +101,7 @@ head(projects)
 #write.csv(merged, "io/merged_projects.csv")
 ```
 
-```{r}
-print(head(donations))
-print(colnames(donations))
-print(head(donors))
-print(colnames(donors))
-print(colnames(projects))
-print(head(resources))
-print(colnames(donations))
-print(head(schools))
-print(colnames(donations))
-print(head(teachers))
-print(colnames(donations))
-```
+
 
 
 ```{r}
@@ -152,24 +161,6 @@ df_merged <- data.table::fread("io/df_merged.csv")
 merged <- data.table::fread("io/merged_projects.csv")
 ```
 
-## Extract Unique Category and Subcategory Names
-```{r}
-# 9 Unique Value for Project Category
-unique_category <- c()
-for (i in df_merged$Project.Subject.Category.Tree){
-    a <- strsplit(i, ", ")[[1]]
-    unique_category <- append(unique_category,a)
-    unique_category <- unique(unique_category)
-}
-
-# 30 Unique Value for Project Subcategory
-unique_subcategory <- c()
-for (i in df_merged$Project.Subject.Subcategory.Tree){
-    a <- strsplit(i, ", ")[[1]]
-    unique_subcategory <- append(unique_subcategory,a)
-    unique_subcategory <- unique(unique_subcategory)
-}
-```
 
 ## Scenario 1
 Question:Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
