@@ -166,16 +166,16 @@ teacher_money_amount <- teacher$Donation.Amount
 nonteacher_money_amount <- nonteacher$Donation.Amount
 ```
 
-2.1 Wilcoxon test- test for the difference in mean
 ```{r}
+#2.1 Wilcoxon test- test for the difference in mean
 # one-sided test- test for difference greater than or equal to 0
 # null: true shift is greater than 0 teacher donates more than non-teachers
 wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE)
 wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE, alternative = "less")
 ```
 
-2.2 True fraction of teacher donors in the donor population
 ```{r}
+#2.2 True fraction of teacher donors in the donor population
 teacher.donor.fraction <- round(as.numeric(table(Donors[,`Donor Is Teacher`])[2])/nrow(Donors)*100, 3)
 print(paste0("The true fraction of teacher donors is ", teacher.donor.fraction, "%"))
 
