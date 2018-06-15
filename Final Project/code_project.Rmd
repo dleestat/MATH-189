@@ -26,21 +26,32 @@ output: html_notebook
 - *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
 
 
-## Data Processing
+## Data Preprocessing
 ```{r}
+options(scipen = 999)  # Disable scientific notation
+```
+
+```{r results='hide'}
 #install.packages(data.table)
 #install.packages('tm')
 #install.packages('wordcloud')
-#install.packages('tree')
+#install.packages('car')
+#install.packages('MASS')
+#install.packages('glmnet')
+#install.packages('ISLR')
 #install.packages('randomForest')
+
 library(data.table)
 library(tm)
 library(wordcloud)
-library(tree)
+library(car)
+library(MASS)
+library(glmnet)
+library(ISLR)
 library(randomForest)
 ```
 
-```{r}
+```{r results='hide'}
 donations <- fread('io/Donations.csv')                     # 583.03 MB
 donors    <- fread('io/Donors.csv',
                    colClasses=c('Donor Zip'='character'))  # 118.24 MB
@@ -60,6 +71,7 @@ teachers
 ```
 
 ```{r}
+# Unique column names across all datasets
 columns <- NULL
 for (table in list(donations, donors, projects, resources, schools, teachers)) {
   columns = c(columns, colnames(table))
@@ -67,7 +79,7 @@ for (table in list(donations, donors, projects, resources, schools, teachers)) {
 sort(unique(columns))
 ```
 
-```{r}
+```{r results='hide'}
 # Merge Data Frames
 # projects <- projects[-c(6,7,8,9)]
 # write.csv(projects, "io/projects_mini.csv")
@@ -81,6 +93,14 @@ sort(unique(columns))
 #merged <- merge(merged,projects, by = "Project.ID")
 #merged <- merge(merged,schools, by = "School.ID")
 #write.csv(merged, "io/merged_projects.csv")
+
+Donors    <- donors
+
+# Merged dataframe based on Donation.ID
+df_merged <- fread("io/df_merged.csv")        # 1.79 GB
+
+# Merged dataframe based on each Project.ID
+merged    <- fread("io/merged_projects.csv")  # 250.2 MB
 ```
 
 ```{r}
@@ -118,12 +138,14 @@ projects.categorized
 # 8 unique project subject categories
 categories.grouped <- projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
 categories.grouped
+
 categories <- categories.grouped$`Project Subject Category Tree`
 categories
 ```
 
+
 ## Scenario: Text Mining
-```{r fig.show='hide'}
+```{r}
 texts <- merge(projects.categorized, projects[, c(1,8,9)], by='Project ID')[, -1]
 
 for (category in categories) {
@@ -134,85 +156,8 @@ for (category in categories) {
 ```
 
 
-## Scenario: Classification
-```{r}
-df1 <- merge(projects.categorized, projects[, c(1,2,12,14)], by='Project ID')
-df2 <- merge(df1, donations[, c(1,3,5)], by='Project ID')[, -1]
-df3 <- merge(df2, donors[, c(1,4)], by='Donor ID')[, -1]
-df <- merge(df3, schools[, c(1,4)], by='School ID')[, -1]
-df <- df[`Project Grade Level Category` != 'unknown']
-head(df, 100)
-```
-
-
-```{r}
-literacy <- df
-# literacy$`Project Subject Category Tree` <- literacy$`Project Subject Category Tree` == 'Literacy & Language'
-literacy$`Donor Is Teacher` <- literacy$`Donor Is Teacher` == 'Yes'
-literacy <- as.data.frame(literacy)
-
-# category <- as.integer(literacy$`Project Subject Category Tree`)
-# grade <- as.factor(literacy$`Project Grade Level Category`)
-# project.cost <- as.numeric(literacy$`Project Cost`)
-# donation.amount <- as.numeric(literacy$`Donation Amount`)
-# donor.teacher <- as.numeric(literacy$`Donor Is Teacher`)
-# free.lunch <- as.numeric(literacy$`School Percentage Free Lunch`)
-
-# category~grade+project.cost+donation.amount+donor.teacher+free.lunch+project.cost
-colnames(literacy) <- c('category', 'grade', 'cost', 'amt', 'teacher', 'lunch')
-literacy <- na.omit(literacy)
-category.tree <- randomForest(as.factor(category)~lunch, data=literacy)
-unique(literacy$lunch)
-unique(literacy$`Project Subject Category Tree`)
-plot(category.tree)
-text(category.tree)
-```
-
-```{r}
-```
-
-## EDA
-```{r}
-set.seed(0)
-```
-
-
-## Classification Tree
--> Probability of donating to the project type
-```{r}
-colnames(donations)
-```
-
-## Import Merged Dataset
-```{r}
-Donors <- data.table::fread("io/Donors.csv")
-# Merged dataframe based on Donation.ID
-df_merged <- data.table::fread("io/df_merged.csv")
-# Merged dataframe based on each Project.ID
-merged <- data.table::fread("io/merged_projects.csv")
-```
-
-## Extract Unique Category and Subcategory Names
-```{r}
-# 9 Unique Value for Project Category
-unique_category <- c()
-for (i in df_merged$Project.Subject.Category.Tree){
-    a <- strsplit(i, ", ")[[1]]
-    unique_category <- append(unique_category,a)
-    unique_category <- unique(unique_category)
-}
-
-# 30 Unique Value for Project Subcategory
-unique_subcategory <- c()
-for (i in df_merged$Project.Subject.Subcategory.Tree){
-    a <- strsplit(i, ", ")[[1]]
-    unique_subcategory <- append(unique_subcategory,a)
-    unique_subcategory <- unique(unique_subcategory)
-}
-```
-
 ## Scenario 1
-Question:Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
+Question: Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
 ```{r}
 
 ```
@@ -220,7 +165,6 @@ Question:Is there a seasonal pattern of donations? Is the total amount of receiv
 
 ## Scenario 2
 Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern (Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher).
-
 ```{r}
 teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
 nonteacher <- df_merged[which(df_merged$Donor.Is.Teacher=='No'),]
@@ -241,7 +185,7 @@ wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, corre
 teacher.donor.fraction <- round(as.numeric(table(Donors[,`Donor Is Teacher`])[2])/nrow(Donors)*100, 3)
 print(paste0("The true fraction of teacher donors is ", teacher.donor.fraction, "%"))
 
-# EDA: Check if teacher donors' donation pattern(except for the ones who only donate 1 dollar) follow normal distribution
+# EDA: Check if teacher donors' donation pattern (except for the ones who only donate 1 dollar) follow normal distribution
 t <- sample(teacher$Donation.Amount, 10000)
 tt <- teacher[which(teacher$Donation.Amount<500 & teacher$Donation.Amount>1),6]$Donation.Amount
 qqplot(log(tt), rnorm(length(tt), mean(log(tt)), var(log(tt))))
@@ -254,7 +198,7 @@ hist(log(tt))
 Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
 Additional Dataset "Data" from online source: https://www.census.gov/data/tables/2017/demo/popest/state-total.html#par_textimage
 ```{r}
-population <- data.table::fread("io/nst-est2017-01.csv")
+population <- fread("io/nst-est2017-01.csv")
 population$Population <- as.numeric(gsub(",","",population$Population))
 donors.state <- as.data.table(table(donors$`Donor State`))
 names(donors.state) <- c("State", "Donors.Count")
@@ -270,18 +214,19 @@ donors.state[which(donors.state$donations.total < a[[2]]), 'indicator'] <- 'Low 
 donors.state[which(donors.state$donations.total >= a[[2]]), 'indicator'] <- 'Medium State Total Donations' 
 donors.state[which(donors.state$donations.total >= a[[5]]), 'indicator'] <- 'High State Total Donations' 
 ```
-3.1 Graphically Display the distribution of Donor Ratio per State
+
 ```{r}
+# 3.1 Graphically Display the distribution of Donor Ratio per State
 hist(donors.state$percentage, breaks = 15, main = "Histogram of States' Donor/ State Population Ratio", xlab= "Donor/ State Population Ratio")
 donors.percentage <- donors.state$percentage[-1]
 normal.percentage <- rnorm(length(donors.percentage), mean(donors.percentage), var(donors.percentage))
-library(car)
 qqPlot(donors.percentage, xlab = "Theoretical Quantiles",
 ylab = "Observed Quantiles", main = "QQ-Plot: Donor/ State Population Ratio Quantile vs Normal Quantile")
 
 ```
-3.2 Scatter Plot: Indicate states that has special donating pattern
+
 ```{r}
+# 3.2 Scatter Plot: Indicate states that has special donating pattern
 #qqplot(donors.state$donations.avg, donors.state$percentage)
 qplot(percentage, donations.avg, colour = indicator, data = donors.state,main = 'ScatterPlot of Donor/State Population Ratio Vs. State Average Donations', xlab = "Donor/State Population Ratio", ylab = "State Average Donations")
 ```
@@ -289,44 +234,38 @@ qplot(percentage, donations.avg, colour = indicator, data = donors.state,main = 
 
 ## Scenario 4
 Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
-4.1 In total, find out the states that have the most donations.
 ```{r}
+# 4.1 In total, find out the states that have the most donations.
 # Figure out the rank of total donation amount for each state
 state.total <-  aggregate(list(donations.total=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= sum)
 state.total <-  state.total[order(state.total$donations.total, decreasing = TRUE),]
 summary(state.total$donations.total)
 ```
 
-4.2 On average, find out the states that have the most donation per transaction.
 ```{r}
+# 4.2 On average, find out the states that have the most donation per transaction.
 # Figure out the rank of average donation amount per transaction for each state
 state.avg <-  aggregate(list(donations.avg=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= mean)
 state.avg <- state.avg[order(state.avg$donations.avg, decreasing = TRUE),]
 summary(state.avg$donations.avg)
 ```
 
-4.3 Least Square Regression on predicting how much a donor will donate 
 ```{r}
+# 4.3 Least Square Regression on predicting how much a donor will donate 
 sample <- merged[sample(nrow(merged), 100000), ]
 sample=na.omit(sample)
 ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
 summary(ols)
 ```
 
-4.4 Ridge Regression on predicting how much a donor will donate 
 ```{r}
-# Ridge
-#install.packages("MASS")
-library(MASS)
-ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
+# 4.4 Ridge Regression on predicting how much a donor will donate 
+#ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
 plot(ridge)
 select(ridge)
 ```
+
 ```{r}
-# install.packages("ISLR")
-# install.packages("glmnet")
-library("glmnet")
-library(ISLR)
 set.seed(2018)
 
 sample = sample[c(4,7,10,11,17,18)]
@@ -338,8 +277,8 @@ cv.ridge=cv.glmnet(x,y,alpha=0)
 plot(cv.ridge)
 ```
 
-4.5 Lasso Regression on predicting how much a donor will donate 
 ```{r}
+# 4.5 Lasso Regression on predicting how much a donor will donate
 fit.lasso=glmnet(x,y,alpha=1)
 plot(fit.lasso,xvar="lambda",label=TRUE)
 cv.lasso=cv.glmnet(x,y)
@@ -359,38 +298,9 @@ coef(lasso.tr,s=lam.best)
 ```
 
 
-## Scenario 5
-Forests/ Bagging(Include Cross Validation)/ clustering - Predict how likely the donor is going to donate. 
-
-5.1 Random Forests
-```{r}
-#install.packages('randomForest')
-library(randomForest)
-
-n <- nrow(sample)
-train <- sample(1:n, size = floor(0.75*n), replace = FALSE) # use 75% data for training
-rf.fit <- randomForest(donations ~ ., data = sample[train, ], importance = TRUE, ntree = 1000, nodesize = 10)
-varImpPlot(rf.fit)
-rf.pred <- predict(rf.fit, sample[-train, ], type = 'response')
-# MSE
-print(mean((rf.pred - sample[-train, ]$donations)^2))
-print(mean(abs(rf.pred - sample[-train, ]$donations)))
-print(mean(abs(rf.pred - sample[-train, ]$donations)/sample[-train, ]$donations))
-```
-
-5.2 K-Mean Clustering
-```{r}
-library(ggplot2)
-ggplot(sample, aes(School.Percentage.Free.Lunch,donations, color = School.Metro.Type)) + geom_point()
-set.seed(314)
-irisCluster <- kmeans(iris[, c(1,3)], 3, nstart = 20)
-irisCluster
-```
-
 ## Scenario 6
-How is the project 
-6.1 Test of Independence Checking if the funding duration time is independent of project cost
 ```{r}
+# 6.1 Test of Independence Checking if the funding duration time is independent of project cost
 # Clean out the outliers
 test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),c(4,12,13,14,16)]
 test$expire.duration <- as.numeric(as.Date(test$Project.Expiration.Date)-as.Date(test$Project.Posted.Date))
@@ -442,4 +352,75 @@ least.squares <- lm(donations~Project.Cost, data=test_avg)
 plot(test_avg$Project.Cost, test_avg$donations)
 abline(least.squares, col='red')
 summary(least.squares)
+```
+
+
+## Scenario 7: Recommender System
+```{r}
+# Merge datasets
+df <- merge(projects.categorized, projects[, c(1,2,12,14)], by='Project ID')
+df <- merge(df, donations[, c(1,3,5)], by='Project ID')[, -1]
+df <- merge(df, donors[, c(1,4)], by='Donor ID')[, -1]
+df <- merge(df, schools[, c(1,3,4)], by='School ID')[, -1]
+
+# Omit invalid values
+df <- na.omit(df)
+df <- df[`Project Grade Level Category` != 'unknown'][`School Metro Type` != 'unknown']
+
+# Arrange columns by category, numerical attribute, categorical attribute
+df <- df[, c(1,3,4,7,5,6,2)]
+
+# Convert some categorical columns to logical
+df$`Donor Is Teacher` <- df$`Donor Is Teacher` == 'Yes'
+df$`School Metro Type` <- df$`School Metro Type` == 'suburban'
+
+# Rename columns
+colnames(df) <- c('Subject.Category', 'Project.Cost', 'Donation.Amount', 'School.Percentage.Free.Lunch', 'Donor.Is.Teacher', 'School.Is.Suburban', 'Grade.Level')
+
+# Convert categorical columns to factor
+df$Subject.Category = as.factor(df$Subject.Category)
+df$Grade.Level = as.factor(df$Grade.Level)
+df
+```
+
+```{r}
+set.seed(0)
+training.size <- 50000
+num.trees <- 20
+
+# Randomly partition into training and testing set
+df <- df[sample(nrow(df))]
+df.training <- df[1:training.size]
+df.testing <- df[(training.size+1):nrow(df)]
+
+predictions <- data.table(Subject.Category=df.testing$Subject.Category)
+
+# Produce a random forest (of regression trees) for each subject category.
+# Outputs probability of a project being that subject category given project and
+# donor attributes.
+for (category in categories) {
+  df.category <- df.training
+  df.category$Subject.Category <- df.category$Subject.Category == category 
+  
+  model <- randomForest(Subject.Category ~ ., data=df.category, ntree=num.trees)
+  
+  title <- paste('Random Forest (of Regression Trees) for', category)
+  
+  print(getTree(model))
+  plot(model, main=title, cex.main=.9)
+  varImpPlot(model, main=title, cex.main=.9)
+  
+  predictions[, category] <- predict(model, df.testing)
+}
+```
+
+```{r}
+# Predict subject category by selecting the category with the highest random
+# forest (of regression trees) probability of being in that category.
+predictions$Predicted.Category <- colnames(predictions[, -1])[max.col(predictions[, -1])]
+predictions <- predictions[, c(1,10,2:9)]
+predictions
+
+test.accuracy <- sum(predictions$Subject.Category == predictions$Predicted.Category) / nrow(predictions)
+test.accuracy
 ```
