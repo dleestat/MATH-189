@@ -28,6 +28,7 @@ output: html_notebook
 
 ```{r}
 #install.packages(data.table)
+#install.packages('wordcloud')
 #install.packages('tree')
 suppressMessages(library(data.table))
 library(tree)
@@ -77,8 +78,8 @@ projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasi
 
 ## Text Mining
 ```{r}
-texts <- merge(projects.categorized, projects[,c(1,8,9)], by='Project ID')[,-1]
-texts[`Project Subject Category Tree`=='Warmth']
+texts <- merge(projects.categorized, projects[, c(1,8,9)], by='Project ID')[, -1]
+texts
 ```
 
 ```{r}
