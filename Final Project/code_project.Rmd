@@ -232,8 +232,38 @@ hist(log(tt))
 
 ## Scenario 3
 Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
+Additional Dataset "Data" from online source: https://www.census.gov/data/tables/2017/demo/popest/state-total.html#par_textimage
 ```{r}
+population <- data.table::fread("io/nst-est2017-01.csv")
+population$Population <- as.numeric(gsub(",","",population$Population))
+donors.state <- as.data.table(table(donors$`Donor State`))
+names(donors.state) <- c("State", "Donors.Count")
+donors.state <- donors.state[order(donors.state$Donors.Count, decreasing = TRUE),]
+donors.state <- merge(donors.state,population,by="State")
+donors.state$percentage <- donors.state$Donors.Count/donors.state$Population*100
+donors.state <- donors.state[order(donors.state$percentage, decreasing = TRUE),]
+donors.state <- merge(donors.state, state.total, by = "State")
+donors.state <- merge(donors.state, state.avg, by = "State")
+a <- summary(donors.state$donations.total)
+donors.state$indicator <- NULL
+donors.state[which(donors.state$donations.total < a[[2]]), 'indicator'] <- 'Low State Total Donations' 
+donors.state[which(donors.state$donations.total >= a[[2]]), 'indicator'] <- 'Medium State Total Donations' 
+donors.state[which(donors.state$donations.total >= a[[5]]), 'indicator'] <- 'High State Total Donations' 
+```
+3.1 Graphically Display the distribution of Donor Ratio per State
+```{r}
+hist(donors.state$percentage, breaks = 15, main = "Histogram of States' Donor/ State Population Ratio", xlab= "Donor/ State Population Ratio")
+donors.percentage <- donors.state$percentage[-1]
+normal.percentage <- rnorm(length(donors.percentage), mean(donors.percentage), var(donors.percentage))
+library(car)
+qqPlot(donors.percentage, xlab = "Theoretical Quantiles",
+ylab = "Observed Quantiles", main = "QQ-Plot: Donor/ State Population Ratio Quantile vs Normal Quantile")
 
+```
+3.2 Scatter Plot: Indicate states that has special donating pattern
+```{r}
+#qqplot(donors.state$donations.avg, donors.state$percentage)
+qplot(percentage, donations.avg, colour = indicator, data = donors.state,main = 'ScatterPlot of Donor/State Population Ratio Vs. State Average Donations', xlab = "Donor/State Population Ratio", ylab = "State Average Donations")
 ```
 
 
@@ -242,17 +272,17 @@ Predict donors' donating behaviors to figure out how much a donor would donate f
 4.1 In total, find out the states that have the most donations.
 ```{r}
 # Figure out the rank of total donation amount for each state
-state.total <-  aggregate(list(donations=df_merged$Donation.Amount), by=list(states=df_merged$Donor.State), FUN= sum)
-state.total <-  state.total[order(state.total$donations, decreasing = TRUE),]
-summary(state.total$donations)
+state.total <-  aggregate(list(donations.total=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= sum)
+state.total <-  state.total[order(state.total$donations.total, decreasing = TRUE),]
+summary(state.total$donations.total)
 ```
 
 4.2 On average, find out the states that have the most donation per transaction.
 ```{r}
 # Figure out the rank of average donation amount per transaction for each state
-state.avg <-  aggregate(list(donations=df_merged$Donation.Amount), by=list(states=df_merged$Donor.State), FUN= mean)
-state.avg <- state.avg[order(state.avg$donations, decreasing = TRUE),]
-summary(state.avg$donations)
+state.avg <-  aggregate(list(donations.avg=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= mean)
+state.avg <- state.avg[order(state.avg$donations.avg, decreasing = TRUE),]
+summary(state.avg$donations.avg)
 ```
 
 4.3 Least Square Regression on predicting how much a donor will donate 
@@ -338,8 +368,8 @@ irisCluster
 ```
 
 ## Scenario 6
-How is the project
-6.1 Test of Independence Test if the funding duration time is independent of project cost
+How is the project 
+6.1 Test of Independence Checking if the funding duration time is independent of project cost
 ```{r}
 # Clean out the outliers
 test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),c(4,12,13,14,16)]
