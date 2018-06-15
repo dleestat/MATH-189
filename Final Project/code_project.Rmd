@@ -42,16 +42,8 @@ schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
 ```{r}
-print(donations)
-print(donors)
-print(projects)
-print(resources)
-print(schools)
-print(teachers)
-```
-```{r}
 # Ensure there is only one subject category per row of Projects.csv for further analysis
-# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree columns
+# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree
 # projects.categorized is a data.table with Project ID and a row for every unique subject category for that Project ID
 set.seed(0)
 n <- 50000
@@ -68,19 +60,6 @@ for (row in 1:nrow(projects.categorized)) {
   }
 }
 ```
-```{r}
-# 9 unique project subject categories
-projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
-```
-
-
-
-## Text Mining
-```{r}
-texts <- merge(projects.categorized, projects[,c(1,8,9)], by='Project ID')[,-1]
-texts[`Project Subject Category Tree`=='Warmth']
-```
-
 ```{r}
 df <- merge(projects.categorized, projects[, -c(4,5,6,7,10,11,15,16,17,18)], by='Project ID')
 df
@@ -101,7 +80,19 @@ head(projects)
 #write.csv(merged, "io/merged_projects.csv")
 ```
 
-
+```{r}
+print(head(donations))
+print(colnames(donations))
+print(head(donors))
+print(colnames(donors))
+print(colnames(projects))
+print(head(resources))
+print(colnames(donations))
+print(head(schools))
+print(colnames(donations))
+print(head(teachers))
+print(colnames(donations))
+```
 
 
 ```{r}
@@ -128,30 +119,6 @@ set.seed(0)
 colnames(donations)
 ```
 
-
-## Import Dataset
-```{r}
-#Donations <- data.table::fread("io/Donations.csv")
-#projects <- data.table::fread("io/projects_mini.csv")
-#schools <-  data.table::fread("io/Schools.csv")[,c(1,3,4)]
-#teachers <- data.table::fread("io/Teachers.csv")
-
-# Merge Data Frames
-# projects <- data.table::fread("io/Projects.csv")
-# projects <- projects[-c(6,7,8,9)]
-# write.csv(projects, "io/projects_mini.csv")
-# df_merged <- merge(Donations,Donors,by="Donor.ID")
-# df_merged <- df_merged[-3]
-# df_merged <- merge(df_merged,projects,by="Project.ID")
-# df_merged <- merge(df_merged,schools,by="School.ID")
-# write.csv(df_merged, "io/df_merged.csv")
-
-#merged <-  aggregate(list(donations=Donations$Donation.Amount), by=list(Project.ID=Donations$Project.ID), FUN= sum)
-#merged <- merge(merged,projects, by = "Project.ID")
-#merged <- merge(merged,schools, by = "School.ID")
-#write.csv(merged, "io/merged_projects.csv")
-```
-
 ## Import Merged Dataset
 ```{r}
 Donors <- data.table::fread("io/Donors.csv")
@@ -161,6 +128,24 @@ df_merged <- data.table::fread("io/df_merged.csv")
 merged <- data.table::fread("io/merged_projects.csv")
 ```
 
+## Extract Unique Category and Subcategory Names
+```{r}
+# 9 Unique Value for Project Category
+unique_category <- c()
+for (i in df_merged$Project.Subject.Category.Tree){
+    a <- strsplit(i, ", ")[[1]]
+    unique_category <- append(unique_category,a)
+    unique_category <- unique(unique_category)
+}
+
+# 30 Unique Value for Project Subcategory
+unique_subcategory <- c()
+for (i in df_merged$Project.Subject.Subcategory.Tree){
+    a <- strsplit(i, ", ")[[1]]
+    unique_subcategory <- append(unique_subcategory,a)
+    unique_subcategory <- unique(unique_subcategory)
+}
+```
 
 ## Scenario 1
 Question:Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
@@ -309,6 +294,7 @@ irisCluster
 ```
 
 ## Scenario 6
+How is the project
 6.1 Test of Independence Test if the funding duration time is independent of project cost
 ```{r}
 # Clean out the outliers
@@ -363,3 +349,25 @@ plot(test_avg$Project.Cost, test_avg$donations)
 abline(least.squares, col='red')
 summary(least.squares)
 ```
+
+## Scenario 7
+WordCloud on Project Title
+```{r}
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+projects <- projects %>% 
+  rename(ProjectTitle = `Project Title`)
+createWordCloud = function(train){
+  train %>%
+    unnest_tokens(word, ProjectTitle) %>%
+    filter(!word %in% stop_words$word) %>%
+    count(word,sort = TRUE) %>%
+    ungroup()  %>%
+    head(30) %>%
+    with(wordcloud(word, n, max.words = 30,colors=brewer.pal(8, "Dark2")))
+}
+
+createWordCloud(projects)
+```
+
