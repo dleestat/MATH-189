@@ -26,13 +26,17 @@ output: html_notebook
 - *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
 
 
-```{r}
+```{r results='hide'}
 #install.packages(data.table)
+#install.packages('tm')
 #install.packages('wordcloud')
 #install.packages('tree')
-suppressMessages(library(data.table))
+library(data.table)
+library(tm)
+library(wordcloud)
 library(tree)
 ```
+
 ```{r results='hide'}
 donations <- fread('io/Donations.csv')                     # 583.03 MB
 donors    <- fread('io/Donors.csv',
@@ -42,34 +46,54 @@ resources <- fread('io/Resources.csv')                     # 781.39 MB
 schools   <- fread('io/Schools.csv')                       # 9.21 MB
 teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
 ```
+
+```{r}
+donations
+donors
+projects
+resources
+schools
+teachers
+```
+
 ```{r}
 # Ensure there is only one subject category per row of Projects.csv for further analysis
 # Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree
-# projects.categorized is a data.table with Project ID and a row for every unique subject category for that Project ID
+# projects.categorized is a data.table with Project ID and a separate row for every unique subject category for that Project ID
 set.seed(0)
 n <- 50000
 projects.categorized <- projects[sample(nrow(projects), n), list(`Project ID`, `Project Subject Category Tree`)]
 for (row in 1:nrow(projects.categorized)) {
-  categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
-  if (length(categories) > 1) {
+  row.categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
+  if (length(row.categories) > 1) {
     duplicate <- projects.categorized[row]
-    projects.categorized[row]$`Project Subject Category Tree` <- categories[1]
-    for (category in categories[-1]) {
+    projects.categorized[row]$`Project Subject Category Tree` <- row.categories[1]
+    for (category in row.categories[-1]) {
       duplicate$`Project Subject Category Tree` <- category
       projects.categorized <- rbindlist(list(projects.categorized, duplicate))
     }
   }
 }
-```
-```{r}
-# 9 unique project subject categories
-projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
+projects.categorized
 ```
 
-## Text Mining
+```{r}
+# 9 unique project subject categories
+categories.grouped <- projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
+categories.grouped
+categories <- categories.grouped$`Project Subject Category Tree`
+categories
+```
+
+## Scenario: Text Mining
 ```{r}
 texts <- merge(projects.categorized, projects[, c(1,8,9)], by='Project ID')[, -1]
-texts
+
+for (category in categories) {
+  category.projects <- texts[`Project Subject Category Tree`==category]
+  words <- c(category.projects$`Project Short Description`, category.projects$`Project Need Statement`)
+  wordcloud(words, max.words=50)
+}
 ```
 
 ```{r}
@@ -361,25 +385,3 @@ plot(test_avg$Project.Cost, test_avg$donations)
 abline(least.squares, col='red')
 summary(least.squares)
 ```
-
-## Scenario 7
-WordCloud on Project Title
-```{r}
-library(tidyverse)
-library(tidytext)
-library(wordcloud)
-projects <- projects %>% 
-  rename(ProjectTitle = `Project Title`)
-createWordCloud = function(train){
-  train %>%
-    unnest_tokens(word, ProjectTitle) %>%
-    filter(!word %in% stop_words$word) %>%
-    count(word,sort = TRUE) %>%
-    ungroup()  %>%
-    head(30) %>%
-    with(wordcloud(word, n, max.words = 30,colors=brewer.pal(8, "Dark2")))
-}
-
-createWordCloud(projects)
-```
-
