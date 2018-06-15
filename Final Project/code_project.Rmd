@@ -26,7 +26,8 @@ output: html_notebook
 - *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
 
 
-```{r results='hide'}
+## Data Processing
+```{r}
 #install.packages(data.table)
 #install.packages('tm')
 #install.packages('wordcloud')
@@ -37,7 +38,7 @@ library(wordcloud)
 library(tree)
 ```
 
-```{r results='hide'}
+```{r}
 donations <- fread('io/Donations.csv')                     # 583.03 MB
 donors    <- fread('io/Donors.csv',
                    colClasses=c('Donor Zip'='character'))  # 118.24 MB
@@ -57,11 +58,15 @@ teachers
 ```
 
 ```{r}
-# Ensure there is only one subject category per row of Projects.csv for further analysis
-# Take a random sample of Projects.csv with only Project ID and Project Subject Category Tree
-# projects.categorized is a data.table with Project ID and a separate row for every unique subject category for that Project ID
+# Ensure there is only one subject category per row of Projects.csv for further
+# analysis.
+# Take a random sample of Projects.csv with only Project ID and Project Subject
+# Category Tree.
+# projects.categorized is a data.table with Project ID and a separate row for
+# every unique subject category for that Project ID.
 set.seed(0)
 n <- 50000
+
 projects.categorized <- projects[sample(nrow(projects), n), list(`Project ID`, `Project Subject Category Tree`)]
 for (row in 1:nrow(projects.categorized)) {
   row.categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
@@ -74,11 +79,17 @@ for (row in 1:nrow(projects.categorized)) {
     }
   }
 }
+
+# Readd "Warmth, Care & Hunger"
+projects.categorized.warmth <- projects.categorized[`Project Subject Category Tree` == 'Warmth']
+projects.categorized.warmth$`Project Subject Category Tree` <- 'Warmth, Care & Hunger'
+projects.categorized <- projects.categorized[!(`Project Subject Category Tree` %in% c('Warmth', 'Care & Hunger'))]
+projects.categorized <- rbindlist(list(projects.categorized, projects.categorized.warmth))
 projects.categorized
 ```
 
 ```{r}
-# 9 unique project subject categories
+# 8 unique project subject categories
 categories.grouped <- projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
 categories.grouped
 categories <- categories.grouped$`Project Subject Category Tree`
@@ -86,7 +97,7 @@ categories
 ```
 
 ## Scenario: Text Mining
-```{r}
+```{r fig.show='hide'}
 texts <- merge(projects.categorized, projects[, c(1,8,9)], by='Project ID')[, -1]
 
 for (category in categories) {
@@ -96,11 +107,22 @@ for (category in categories) {
 }
 ```
 
-```{r}
-df <- merge(projects.categorized, projects[, -c(4,5,6,7,10,11,15,16,17,18)], by='Project ID')
-df
 
-head(projects)
+## Scenario: Classification
+```{r}
+df1 <- merge(projects.categorized, projects[, c(1,2,3,12,13,14)], by='Project ID')
+df2 <- merge(df1, donations[, c(1,3,5)], by='Project ID')
+df3 <- merge(df2, donors[, c(1,4)], by='Donor ID')
+unique(df3$`Project Resource Category`)
+unique(projects$`Project Subject Category Tree`)
+
+# donations
+# donors
+# projects
+# resources
+# schools
+# teachers
+
 # Merge Data Frames
 # projects <- projects[-c(6,7,8,9)]
 # write.csv(projects, "io/projects_mini.csv")
@@ -114,20 +136,6 @@ head(projects)
 #merged <- merge(merged,projects, by = "Project.ID")
 #merged <- merge(merged,schools, by = "School.ID")
 #write.csv(merged, "io/merged_projects.csv")
-```
-
-```{r}
-print(head(donations))
-print(colnames(donations))
-print(head(donors))
-print(colnames(donors))
-print(colnames(projects))
-print(head(resources))
-print(colnames(donations))
-print(head(schools))
-print(colnames(donations))
-print(head(teachers))
-print(colnames(donations))
 ```
 
 
