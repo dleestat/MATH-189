@@ -41,8 +41,6 @@ library(MASS)
 library(glmnet)
 library(ISLR)
 library(randomForest)
-install.packages('gbm')
-library(gbm)
 ```
 
 ```{r results='hide'}
