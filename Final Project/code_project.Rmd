@@ -411,6 +411,7 @@ for (category in categories) {
 # forest (of regression trees) probability of being in that category.
 predictions$Predicted.Category <- colnames(predictions[, -1])[max.col(predictions[, -1])]
 predictions <- predictions[, c(1,10,2:9)]
+predictions
 ```
 
 
@@ -434,7 +435,7 @@ categories.accuracy <- data.table(Subject.Category=c('All Categories', categorie
 categories.accuracy$Accuracy <- categories.accuracy$Correct.Predictions / categories.accuracy$Total
 categories.accuracy
 
-par(mai=c(.5,2,.5,.5))
+par(mai=c(1,2,.5,.5))
 barplot(categories.accuracy$Accuracy,
         names.arg=categories.accuracy$Subject.Category, horiz=TRUE, las=1,
         main='Cross-Validation Accuracy of Recommender System',
