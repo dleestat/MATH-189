@@ -32,10 +32,12 @@ output: html_notebook
 #install.packages('tm')
 #install.packages('wordcloud')
 #install.packages('tree')
+#install.packages('randomForest')
 library(data.table)
 library(tm)
 library(wordcloud)
 library(tree)
+library(randomForest)
 ```
 
 ```{r}
@@ -55,6 +57,30 @@ projects
 resources
 schools
 teachers
+```
+
+```{r}
+columns <- NULL
+for (table in list(donations, donors, projects, resources, schools, teachers)) {
+  columns = c(columns, colnames(table))
+}
+sort(unique(columns))
+```
+
+```{r}
+# Merge Data Frames
+# projects <- projects[-c(6,7,8,9)]
+# write.csv(projects, "io/projects_mini.csv")
+# df_merged <- merge(Donations,Donors,by="Donor.ID")
+# df_merged <- df_merged[-3]
+# df_merged <- merge(df_merged,projects,by="Project.ID")
+# df_merged <- merge(df_merged,schools,by="School.ID")
+# write.csv(df_merged, "io/df_merged.csv")
+
+#merged <-  aggregate(list(donations=Donations$Donation.Amount), by=list(Project.ID=Donations$Project.ID), FUN= sum)
+#merged <- merge(merged,projects, by = "Project.ID")
+#merged <- merge(merged,schools, by = "School.ID")
+#write.csv(merged, "io/merged_projects.csv")
 ```
 
 ```{r}
@@ -110,42 +136,36 @@ for (category in categories) {
 
 ## Scenario: Classification
 ```{r}
-df1 <- merge(projects.categorized, projects[, c(1,2,3,12,13,14)], by='Project ID')
-df2 <- merge(df1, donations[, c(1,3,5)], by='Project ID')
-df3 <- merge(df2, donors[, c(1,4)], by='Donor ID')
-unique(df3$`Project Resource Category`)
-unique(projects$`Project Subject Category Tree`)
-
-# donations
-# donors
-# projects
-# resources
-# schools
-# teachers
-
-# Merge Data Frames
-# projects <- projects[-c(6,7,8,9)]
-# write.csv(projects, "io/projects_mini.csv")
-# df_merged <- merge(Donations,Donors,by="Donor.ID")
-# df_merged <- df_merged[-3]
-# df_merged <- merge(df_merged,projects,by="Project.ID")
-# df_merged <- merge(df_merged,schools,by="School.ID")
-# write.csv(df_merged, "io/df_merged.csv")
-
-#merged <-  aggregate(list(donations=Donations$Donation.Amount), by=list(Project.ID=Donations$Project.ID), FUN= sum)
-#merged <- merge(merged,projects, by = "Project.ID")
-#merged <- merge(merged,schools, by = "School.ID")
-#write.csv(merged, "io/merged_projects.csv")
+df1 <- merge(projects.categorized, projects[, c(1,2,12,14)], by='Project ID')
+df2 <- merge(df1, donations[, c(1,3,5)], by='Project ID')[, -1]
+df3 <- merge(df2, donors[, c(1,4)], by='Donor ID')[, -1]
+df <- merge(df3, schools[, c(1,4)], by='School ID')[, -1]
+df <- df[`Project Grade Level Category` != 'unknown']
+head(df, 100)
 ```
 
 
 ```{r}
-y <- as.factor(sample$`Project Subject Category Tree`)
-x1 <- as.factor(sample$`Project Type`)
-x2 <- as.numeric(sample$`Project Cost`)
-test <- tree(y~x1+x2, data=sample)
-plot(test)
-text(test)
+literacy <- df
+# literacy$`Project Subject Category Tree` <- literacy$`Project Subject Category Tree` == 'Literacy & Language'
+literacy$`Donor Is Teacher` <- literacy$`Donor Is Teacher` == 'Yes'
+literacy <- as.data.frame(literacy)
+
+# category <- as.integer(literacy$`Project Subject Category Tree`)
+# grade <- as.factor(literacy$`Project Grade Level Category`)
+# project.cost <- as.numeric(literacy$`Project Cost`)
+# donation.amount <- as.numeric(literacy$`Donation Amount`)
+# donor.teacher <- as.numeric(literacy$`Donor Is Teacher`)
+# free.lunch <- as.numeric(literacy$`School Percentage Free Lunch`)
+
+# category~grade+project.cost+donation.amount+donor.teacher+free.lunch+project.cost
+colnames(literacy) <- c('category', 'grade', 'cost', 'amt', 'teacher', 'lunch')
+literacy <- na.omit(literacy)
+category.tree <- randomForest(as.factor(category)~lunch, data=literacy)
+unique(literacy$lunch)
+unique(literacy$`Project Subject Category Tree`)
+plot(category.tree)
+text(category.tree)
 ```
 
 ```{r}
