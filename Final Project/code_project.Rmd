@@ -32,23 +32,17 @@ options(scipen = 999)  # Disable scientific notation
 ```
 
 ```{r results='hide'}
-#install.packages(data.table)
-#install.packages('tm')
-#install.packages('wordcloud')
-#install.packages('car')
-#install.packages('MASS')
-#install.packages('glmnet')
-#install.packages('ISLR')
-#install.packages('randomForest')
-
 library(data.table)
 library(tm)
 library(wordcloud)
+library(ggplot2)
 library(car)
 library(MASS)
 library(glmnet)
 library(ISLR)
 library(randomForest)
+install.packages('gbm')
+library(gbm)
 ```
 
 ```{r results='hide'}
@@ -222,7 +216,6 @@ donors.percentage <- donors.state$percentage[-1]
 normal.percentage <- rnorm(length(donors.percentage), mean(donors.percentage), var(donors.percentage))
 qqPlot(donors.percentage, xlab = "Theoretical Quantiles",
 ylab = "Observed Quantiles", main = "QQ-Plot: Donor/ State Population Ratio Quantile vs Normal Quantile")
-
 ```
 
 ```{r}
@@ -261,8 +254,8 @@ summary(ols)
 ```{r}
 # 4.4 Ridge Regression on predicting how much a donor will donate 
 #ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
-plot(ridge)
-select(ridge)
+# plot(ridge)
+# select(ridge)
 ```
 
 ```{r}
@@ -319,11 +312,10 @@ test <- test[which(funded.duration<outlier.upper[4]),]
 test <- test[which(funded.duration>outlier.lower[4]),]
 
 # Attempt for a for loop but failed
-for (i in c(1:length(outlier.lower))){
-  test <- test[which(test[,i]>outlier.lower[i]),]
-  test <- test[which(test[,i]<outlier.upper[i]),]
-}
-
+# for (i in c(1:length(outlier.lower))){
+#   test <- test[which(test[,i]>outlier.lower[i]),]
+#   test <- test[which(test[,i]<outlier.upper[i]),]
+# }
 ```
 
 ```{r}
@@ -406,7 +398,7 @@ for (category in categories) {
   
   title <- paste('Random Forest (of Regression Trees) for', category)
   
-  print(getTree(model))
+  print(getTree(model, labelVar=TRUE))
   plot(model, main=title, cex.main=.9)
   varImpPlot(model, main=title, cex.main=.9)
   
@@ -419,8 +411,32 @@ for (category in categories) {
 # forest (of regression trees) probability of being in that category.
 predictions$Predicted.Category <- colnames(predictions[, -1])[max.col(predictions[, -1])]
 predictions <- predictions[, c(1,10,2:9)]
-predictions
+```
 
-test.accuracy <- sum(predictions$Subject.Category == predictions$Predicted.Category) / nrow(predictions)
-test.accuracy
+
+```{r}
+# Cross-Validation
+correct <- sum(predictions$Subject.Category == predictions$Predicted.Category)
+correct.column <- correct
+total.column <- nrow(predictions)
+
+for (category in categories) {
+  predictions.category <- predictions[Subject.Category == category]
+  
+  correct <- sum(predictions.category$Subject.Category == predictions.category$Predicted.Category)
+  correct.column <- c(correct.column, correct)
+  total.column <- c(total.column, nrow(predictions.category))
+}
+
+categories.accuracy <- data.table(Subject.Category=c('All Categories', categories),
+                                  Correct.Predictions=correct.column,
+                                  Total=total.column)
+categories.accuracy$Accuracy <- categories.accuracy$Correct.Predictions / categories.accuracy$Total
+categories.accuracy
+
+par(mai=c(.5,2,.5,.5))
+barplot(categories.accuracy$Accuracy,
+        names.arg=categories.accuracy$Subject.Category, horiz=TRUE, las=1,
+        main='Cross-Validation Accuracy of Recommender System',
+        xlab='Proportion of Correct Classifications', axis.lty=1)
 ```
