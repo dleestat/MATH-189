@@ -41,6 +41,8 @@ library(MASS)
 library(glmnet)
 library(ISLR)
 library(randomForest)
+library(L1pack)
+library(quantreg)
 ```
 
 ```{r results='hide'}
@@ -148,14 +150,96 @@ for (category in categories) {
 ```
 
 
-## Scenario 1
+## Scenario: Seasonal pattern
 Question: Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
 ```{r}
+# open the project merged
+merged_projet <- read.csv("merged_projects.csv")
+merged_projet['month']<- NA
+month <- as.Date(merged_projet$Project.Posted.Date)
+merged_projet$month <- as.numeric(strftime(month,"%m"))
+ggplot(merged_projet, aes(x=month)) + geom_histogram(aes(y=..count..), stat = 'bin',binwidth=1,color="darkblue", fill="lightblue")+
+  labs(title="Project posted in each month",x="month", y = "count")+
+  theme_classic()
+fit <- lm(merged_projet$Donation.Amount~merged_projet$duration)
+merged_projet$Project.Fully.Funded.Date<- merged_projet[which(merged_projet$Project.Fully.Funded.Date!=''),]
+merged_projet['year']<- NA
+merged_projet$year <- as.numeric(strftime(as.Date(merged_projet$Project.Posted.Date),"%y"))
+merged_recent_year <- merged_projet[which(merged_projet$year!=18),]
+ggplot(merged_recent_year, aes(x=Project.Fully.Funded.Date,color=year,fill=year)) + 
+  geom_histogram(binwidth = 10,alpha = 0.5, aes(y=..count..), stat = 'bin', position = 'stack',alpha=0.5)+ xlim(0, 90)+
+  geom_vline(data=mu1, aes(xintercept=grp.mean, color=Donor.Is.Teacher),
+             linetype="dashed")+
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+  labs(title="Donation amount for Teacher vs Nonteacher",x="Donation amount", y = "count")+
+  theme_classic()
+ggplot(merged_recent_year,aes(x=month))+geom_histogram(aes(y=..count..), stat = 'bin',binwidth=1,color="darkblue", fill="lightblue")+facet_grid(~year)+
+  labs(title="Amount of project posted from 2013-2017",x="month for each year", y = "count")+theme_bw()
+summary_donation_amount <- c(mean(df_merged$Donation.Amount),median(df_merged$Donation.Amount),quantile(df_merged$Donation.Amount, c(.25, .75)))
+#Chi squared godness fit test
+merged_2014 <- merged_projet[which(merged_projet$year==14),]
+set.seed(2017)
+n<- nrow(merged_2014)
+uniform.sample<-runif(n,min=0,max=365)
+merged_2014['exact_day']<- NA
+merged_2014$exact_day <- as.numeric(strftime(as.Date(merged_2014$Project.Fully.Funded.Date), format = "%j"))
+locations<- merged_2014$exact_day
+for (num.regions in c(3,4,6,12,24)) {
+  expected.counts <- rep(n/num.regions, num.regions)
+  observed.counts <- as.vector(table(cut(locations, breaks=seq(0,365,length.out=num.regions+1), include.lowest=TRUE)))
+  hist(locations, breaks=num.regions, probability=TRUE, col=rgb(1,0,0,0.5), main=paste('Locations of project posted (Original vs. Simulated) in',num.regions,'Sub-Intervals'), xlab='Base Pair')
+  hist(uniform.sample, breaks=num.regions, probability=TRUE, col=rgb(0,0,1,0.5), add=TRUE)
+  lines(density(locations, adjust=2), col=2)
+  lines(density(uniform.sample, adjust=2), col=4)
+  legend('topright', legend=c('Original', 'Uniform'), lty=c(1,1), col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)))
+  print(num.regions)
+  print(chisq.test(observed.counts, p=expected.counts/n))
+  
+  residuals <- (observed.counts - expected.counts) / sqrt(expected.counts)
+  plot(residuals, type='h', main=paste('Standardized Residuals of Number of project posted for',num.regions,'Sub-Intervals'), xlab='Sub-Interval Index', ylab='Standardized Residuals')
+}
+project_teacher <- merge(Teachers,merged_projet,by="Teacher.ID")
+project_teacher <- merge(project_teacher,df_merged, by="Project.ID")
+project_teacher_male <- project_teacher[which(project_teacher$Teacher.Prefix == "Mr."),]
+project_teacher_female <- project_teacher[which(project_teacher$Teacher.Prefix == "Mrs." | project_teacher$Teacher.Prefix=="Ms."),]
+res <- wilcox.test(project_teacher_male$Donation.Amount, project_teacher_female$Donation.Amount)
+res
+#seperate the merged project data into 2014 and 2015
+merged_2014 <- merged_2014[which(merged_2014$Project.Current.Status=="Fully Funded"),]
+merged_2015 <- merged_recent_year[which(merged_recent_year$year==15),]
+merged_2016 <- merged_recent_year[which(merged_recent_year$year==16),]
+merged_2015['exact_day']<- NA
+merged_2015$exact_day <- as.numeric(strftime(as.Date(merged_2015$Project.Fully.Funded.Date), format = "%j"))
+merged_2015 <- merged_2015[which(merged_2015$Project.Current.Status=="Fully Funded"),]
+merged_2014_DOY <- merged_2014[order(merged_2014$exact_day),]
+merged_2015_DOY <- merged_2015[order(merged_2015$exact_day),]
+merged_2014_sum <- ddply(merged_2014,c("exact_day"),summarize,B=sum(donations))
+merged_2015_sum <- ddply(merged_2015,c("exact_day"),summarize,B=sum(donations))
+difference_2014 <- apply(merged_2014_sum,2,diff)
+difference_2015 <- apply(merged_2015_sum,2,diff)
+# ks test for the difference of two years
+ks.test(difference_2014, difference_2015)
+res <- wilcox.test(merged_2014$donations, merged_2015$donations)
+res
+a <- c(mean(merged_2014$donations),mean(merged_2015$donations))
+res <- wilcox.test(c(372,372,372,372,372,372), c(390,390))
+res
+merged_2014_sum_month <- ddply(merged_2014,c("month"),summarize,B=sum(donations))
+merged_2015_sum_month <- ddply(merged_2015,c("month"),summarize,B=sum(donations))
+difference_2014_m <- apply(merged_2014_sum_month,2,diff)
+difference_2015_m <- apply(merged_2015_sum_month,2,diff)
+res <- wilcox.test(difference_2014_m, difference_2015_m)
+res
+
+# Create the quantile-quantile data table
+qqplot(x=merged_2014_sum_month$B,y=merged_2015_sum$B,asp=1,xlab="donation amount for 2014",ylab="donation amount for 2015",main="qqplot for donation amount between 2014 and 2015")
+qq.out <- as.data.frame(qq.out)
 
 ```
 
 
-## Scenario 2
+## Scenario: Teacher identity
 Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern (Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher).
 ```{r}
 teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
@@ -185,9 +269,49 @@ abline(0, 1)
 hist(log(tt))
 ```
 
+```{r}
+# Set the x and y limits
+xylim <- range( c(qq.out$x, qq.out$y) )
 
-## Scenario 3
-Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
+# Generate the QQ plot
+ggplot(qq.out, aes( x= x, y = y)) + 
+  geom_point() + 
+  geom_abline( intercept=0, slope=1) +
+  coord_fixed(ratio = 1, xlim=xylim, ylim = xylim) +
+  xlab("donation amount in 2014") + ylab("donation amount in 2015")
+#seperate df_merged into first donor and return donor
+duplicate_Donor <- df_merged[duplicated(df_merged$Donor.ID),]
+unique_Donor <- df_merged[!duplicated(df_merged$Donor.ID),]
+#plot barplot for teacher and nonteacher for return donor and first donor
+ggplot(duplicate_Donor, aes(x=factor(Donor.Is.Teacher)))+
+  geom_bar(stat="count", width=0.7, fill="steelblue")+
+  theme_minimal()+ labs(title="Teacher vs Nonteacher for returned Donor",x="Teacher vs Nonteacher", y = "count")
+ggplot(unique_Donor, aes(x=factor(Donor.Is.Teacher)))+
+  geom_bar(stat="count", width=0.7, fill="steelblue")+
+  theme_minimal()+ labs(title="Teacher vs Nonteacher for unique Donor",x="Teacher vs Nonteacher", y = "count")
+
+# donate less than 1 dollar
+one_dollar_Donor <- df_merged[which(df_merged$Donation.Amount<=1),]
+more_than_one_Donor <- df_merged[which(df_merged$Donation.Amount>1),]
+ggplot(one_dollar_Donor, aes(x=factor(Donor.Is.Teacher)))+
+  geom_bar(stat="count", width=0.7, fill="steelblue")+
+  theme_minimal()+ labs(title="Donors that donate less than or equal to one dollar",x="Teacher vs Nonteacher", y = "count")
+
+#plot barplot for teacher and nonteacher for return donor and first donor
+ggplot(more_than_one_Donor, aes(x=factor(Donor.Is.Teacher)))+
+  geom_bar(stat="count", width=0.7, fill="steelblue")+
+  theme_minimal()+ labs(title="Donors that donate more than one dollar",x="Teacher vs Nonteacher", y = "count")
+
+
+#ks.test 
+teacher_final <- df_merged[which(df_merged$Donor.Is.Teacher=='Yes'),]
+nonteacher_final<-df_merged[which(df_merged$Donor.Is.Teacher=='No'),]
+ks.test(teacher_final$Donation.Amount,nonteacher_final$Donation.Amount)
+```
+
+## Scenario: Donor to population ratio
+Question: Which state has the highest donor to population ratio? 
+
 Additional Dataset "Data" from online source: https://www.census.gov/data/tables/2017/demo/popest/state-total.html#par_textimage
 ```{r}
 population <- fread("io/nst-est2017-01.csv")
@@ -223,7 +347,7 @@ qplot(percentage, donations.avg, colour = indicator, data = donors.state,main = 
 ```
 
 
-## Scenario 4
+## Scenario Regression model
 Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
 ```{r}
 # 4.1 In total, find out the states that have the most donations.
@@ -242,24 +366,28 @@ summary(state.avg$donations.avg)
 ```
 
 ```{r}
-# 4.3 Least Square Regression on predicting how much a donor will donate 
-sample <- merged[sample(nrow(merged), 100000), ]
+# 4.3 Multiple Regression on predicting how much donations a project can receive 
+test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),]
+sample <- test[sample(nrow(merged), 10000), ]
+sample$expire.duration <- as.numeric(as.Date(sample$Project.Expiration.Date)-as.Date(sample$Project.Posted.Date))
+sample$funded.duration <- as.numeric(as.Date(sample$Project.Fully.Funded.Date)-as.Date(sample$Project.Posted.Date))
+```
+```{r}
 sample=na.omit(sample)
-ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
+ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+  Project.Cost + School.Percentage.Free.Lunch, data = sample)
 summary(ols)
 ```
 
 ```{r}
 # 4.4 Ridge Regression on predicting how much a donor will donate 
-#ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
-# plot(ridge)
-# select(ridge)
+ridge <- lm.ridge (donations ~ Project.Type + Project.Grade.Level.Category+ Project.Resource.Category + Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
+plot(ridge)
+select(ridge)
 ```
 
 ```{r}
 set.seed(2018)
-
-sample = sample[c(4,7,10,11,17,18)]
+#sample <- sample[,-15]
 x=model.matrix(donations~.-1,data=sample) 
 y=sample$donations
 fit.ridge=glmnet(x,y,alpha=0)
@@ -289,7 +417,7 @@ coef(lasso.tr,s=lam.best)
 ```
 
 
-## Scenario 6
+## Scenario Donation Prediction
 ```{r}
 # 6.1 Test of Independence Checking if the funding duration time is independent of project cost
 # Clean out the outliers
@@ -322,30 +450,42 @@ boxplot(test[,c(1,2)])
 boxplot(test[,c(3,4)])
 
 par(mfrow=c(2,3))
-hist(test$expire.duration)
-hist(test$funded.duration)
-hist(test$donations)
-hist(test$Project.Cost)
-hist(log(test$Project.Cost))
-hist(log(test$donations))
+hist(test$expire.duration, main = "Histogram of projects' posted to expire duration", xlab = "time duration from post to proposed expiration date", ylab = "frequency")
+hist(test$funded.duration, main = "Histogram of projects' posted to fund duration",xlab = "time duration from post to fully funded", ylab = "frequency")
+hist(test$donations, main = "Histogram of Total Donations collected for projects",xlab = "total donations collected for project", ylab = "frequency")
+hist(test$Project.Cost, main = "Histogram of Total Cost for projects",xlab = "Project Cost", ylab = "frequency")
+hist(log(test$Project.Cost), main = "Histogram of log(Cost) for projects",xlab = "log(Project Cost)", ylab = "frequency" )
+hist(log(test$donations), main = "Histogram of log(Donations) for projects",xlab = "log(Total Donations)", ylab = "frequency")
 
 par(mfrow= c(2,2))
-qqplot(test$donations,test$Project.Cost)
-qqplot(test$donations,test$expire.duration)
-qqplot(test$donations, test$funded.duration)
-qqplot(test$Project.Cost,test$funded.duration)
+qqplot(test$donations,test$Project.Cost,main = "Quantile-Quantile Plot of donations vs. cost",xlab = "Total Donations", ylab = "Project Cost")
+qqplot(test$donations,test$expire.duration,main = "Quantile-Quantile Plot of donations vs. time duration to expire",xlab = "Total Donations", ylab = "time duration to expiration")
+qqplot(test$donations, test$funded.duration, main = "Quantile-Quantile Plot of donations vs. time duration fully funded",xlab = "Total Donations", ylab = "time duration to fully funded")
+qqplot(test$Project.Cost,test$funded.duration,main = "Quantile-Quantile Plot of project cost vs funded duration",xlab = "project cost)", ylab = "time duration to fully funded")
 
 par(mfrow = c(1,1))
 test_avg <- aggregate(list(donations=test$donations), by=list(Project.Cost=round(test$Project.Cost)), FUN=mean)
 test_avg <- test_avg[which(test_avg<=1590),]
 least.squares <- lm(donations~Project.Cost, data=test_avg)
-plot(test_avg$Project.Cost, test_avg$donations)
+lad <- lad(donations~Project.Cost, data=test_avg)
+quant <- rq(donations~Project.Cost, tau=.5, data=test_avg)
+
+plot(test_avg$Project.Cost, test_avg$donations, main = "Least Squares Fitting Regression Line", xlab = "Project.Cost", ylab = "donations")
 abline(least.squares, col='red')
+abline(lad, col='blue')
+abline(quant, col='green')
 summary(least.squares)
+legend('topright', legend=c('Least Squares Regression Line', 'Least Absolute Deviations Regression Line', '50% Quantile Regression Line'), col=c('red', 'blue', 'green'), lty=1)
+
+least.squares.residuals <- data.frame(test_avg['Project.Cost'], test_avg['donations'] - rep(predict(least.squares)))
+
+title.residuals1 <- 'Residuals of Least Squares Regression Line'
+plot(least.squares.residuals, main=title.residuals1, xlim = c(0,1600) ,ylim = c(-1000,1000))
+abline(0, 0, col='red')
+summary(least.squares.residuals)
 ```
 
-
-## Scenario 7: Recommender System
+## Scenario: Recommender System
 ```{r}
 # Merge datasets
 df <- merge(projects.categorized, projects[, c(1,2,12,14)], by='Project ID')
@@ -439,3 +579,13 @@ barplot(categories.accuracy$Accuracy,
         main='Cross-Validation Accuracy of Recommender System',
         xlab='Proportion of Correct Classifications', axis.lty=1)
 ```
+
+## Scenario: EDA
+```{r}
+state.total <- state.total[order(state.total$donations.total, decreasing = TRUE),]
+ggplot(data=state.total, aes(x=state.total$State, y=state.total$donations.total)) +geom_bar(stat="identity")+ coord_flip()
+merged[order(merged$donations, decreasing = TRUE),][1,]
+
+```
+
+
