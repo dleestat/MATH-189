@@ -1,0 +1,441 @@
+---
+title: 'FINAL PROJECT: MATCHING DONORS TO PROJECTS'
+output: html_notebook
+---
+
+## Kaggle Dataset
+[Data Science For Good: DonorsChoose.org](https://www.kaggle.com/donorschoose/io)
+
+***
+
+*Founded in 2000 by a Bronx history teacher, DonorsChoose.org has raised $685 million for America's classrooms. Teachers at three-quarters of all the public schools in the U.S. have come to DonorsChoose.org to request what their students need, making DonorsChoose.org the leading platform for supporting public education.*
+
+*To date, 3 million people and partners have funded 1.1 million DonorsChoose.org projects. But teachers still spend more than a billion dollars of their own money on classroom materials. To get students what they need to learn, the team at DonorsChoose.org needs to be able to connect donors with the projects that most inspire them.*
+
+*In the second Kaggle Data Science for Good challenge, DonorsChoose.org, in partnership with Google.org, is inviting the community to help them pair up donors to the classroom requests that will most motivate them to make an additional gift. To support this challenge, DonorsChoose.org has supplied anonymized data on donor giving from the past five years. The winning methods will be implemented in DonorsChoose.org email marketing campaigns.*
+
+***
+
+#### *Problem Statement*
+*DonorsChoose.org has funded over 1.1 million classroom requests through the support of 3 million donors, the majority of whom were making their first-ever donation to a public school. If DonorsChoose.org can motivate even a fraction of those donors to make another donation, that could have a huge impact on the number of classroom requests fulfilled.*
+
+*A good solution will enable DonorsChoose.org to build targeted email campaigns recommending specific classroom requests to prior donors. Part of the challenge is to assess the needs of the organization, uncover insights from the data available, and build the right solution for this problem. Submissions will be evaluated on the following criteria:*
+
+- *Performance - How well does the solution match donors to project requests to which they would be motivated to donate? DonorsChoose.org will not be able to live test every submission, so a strong entry will clearly articulate why it will be effective at motivating repeat donations.*
+- *Adaptable - The DonorsChoose.org team wants to put the winning submissions to work, quickly. Therefore a good entry will be easy to implement in production.*
+- *Intelligible - A good entry should be easily understood by the DonorsChoose.org team should it need to be updated in the future to accommodate a changing marketplace.*
+
+
+## Data Preprocessing
+```{r}
+options(scipen = 999)  # Disable scientific notation
+```
+
+```{r results='hide'}
+library(data.table)
+library(tm)
+library(wordcloud)
+library(ggplot2)
+library(car)
+library(MASS)
+library(glmnet)
+library(ISLR)
+library(randomForest)
+```
+
+```{r results='hide'}
+donations <- fread('io/Donations.csv')                     # 583.03 MB
+donors    <- fread('io/Donors.csv',
+                   colClasses=c('Donor Zip'='character'))  # 118.24 MB
+projects  <- fread('io/Projects.csv')                      # 2.39 GB
+resources <- fread('io/Resources.csv')                     # 781.39 MB
+schools   <- fread('io/Schools.csv')                       # 9.21 MB
+teachers  <- fread('io/Teachers.csv')                      # 18.66 MB
+```
+
+```{r}
+donations
+donors
+projects
+resources
+schools
+teachers
+```
+
+```{r}
+# Unique column names across all datasets
+columns <- NULL
+for (table in list(donations, donors, projects, resources, schools, teachers)) {
+  columns = c(columns, colnames(table))
+}
+sort(unique(columns))
+```
+
+```{r results='hide'}
+# Merge Data Frames
+# projects <- projects[-c(6,7,8,9)]
+# write.csv(projects, "io/projects_mini.csv")
+# df_merged <- merge(Donations,Donors,by="Donor.ID")
+# df_merged <- df_merged[-3]
+# df_merged <- merge(df_merged,projects,by="Project.ID")
+# df_merged <- merge(df_merged,schools,by="School.ID")
+# write.csv(df_merged, "io/df_merged.csv")
+
+#merged <-  aggregate(list(donations=Donations$Donation.Amount), by=list(Project.ID=Donations$Project.ID), FUN= sum)
+#merged <- merge(merged,projects, by = "Project.ID")
+#merged <- merge(merged,schools, by = "School.ID")
+#write.csv(merged, "io/merged_projects.csv")
+
+Donors    <- donors
+
+# Merged dataframe based on Donation.ID
+df_merged <- fread("io/df_merged.csv")        # 1.79 GB
+
+# Merged dataframe based on each Project.ID
+merged    <- fread("io/merged_projects.csv")  # 250.2 MB
+```
+
+```{r}
+# Ensure there is only one subject category per row of Projects.csv for further
+# analysis.
+# Take a random sample of Projects.csv with only Project ID and Project Subject
+# Category Tree.
+# projects.categorized is a data.table with Project ID and a separate row for
+# every unique subject category for that Project ID.
+set.seed(0)
+n <- 50000
+
+projects.categorized <- projects[sample(nrow(projects), n), list(`Project ID`, `Project Subject Category Tree`)]
+for (row in 1:nrow(projects.categorized)) {
+  row.categories <- unlist(strsplit(projects.categorized[row]$`Project Subject Category Tree`, ', '))
+  if (length(row.categories) > 1) {
+    duplicate <- projects.categorized[row]
+    projects.categorized[row]$`Project Subject Category Tree` <- row.categories[1]
+    for (category in row.categories[-1]) {
+      duplicate$`Project Subject Category Tree` <- category
+      projects.categorized <- rbindlist(list(projects.categorized, duplicate))
+    }
+  }
+}
+
+# Readd "Warmth, Care & Hunger"
+projects.categorized.warmth <- projects.categorized[`Project Subject Category Tree` == 'Warmth']
+projects.categorized.warmth$`Project Subject Category Tree` <- 'Warmth, Care & Hunger'
+projects.categorized <- projects.categorized[!(`Project Subject Category Tree` %in% c('Warmth', 'Care & Hunger'))]
+projects.categorized <- rbindlist(list(projects.categorized, projects.categorized.warmth))
+projects.categorized
+```
+
+```{r}
+# 8 unique project subject categories
+categories.grouped <- projects.categorized[, .N, by=`Project Subject Category Tree`][order(N, decreasing=TRUE)]
+categories.grouped
+
+categories <- categories.grouped$`Project Subject Category Tree`
+categories
+```
+
+
+## Scenario: Text Mining
+```{r}
+texts <- merge(projects.categorized, projects[, c(1,8,9)], by='Project ID')[, -1]
+
+for (category in categories) {
+  category.projects <- texts[`Project Subject Category Tree`==category]
+  words <- c(category.projects$`Project Short Description`, category.projects$`Project Need Statement`)
+  wordcloud(words, max.words=50)
+}
+```
+
+
+## Scenario 1
+Question: Is there a seasonal pattern of donations? Is the total amount of received donation related to donation date? Is the total amount of received donation related to day of the week?
+```{r}
+
+```
+
+
+## Scenario 2
+Question: Test whether the teachers’ donation pattern is different from non-teachers’ donation pattern (Test whether the fraction of teacher in the whole population is larger than the proportion of the donors that are non teacher).
+```{r}
+teacher <- df_merged[which(df_merged$Donor.Is.Teacher== 'Yes'),]
+nonteacher <- df_merged[which(df_merged$Donor.Is.Teacher=='No'),]
+teacher_money_amount <- teacher$Donation.Amount
+nonteacher_money_amount <- nonteacher$Donation.Amount
+```
+
+```{r}
+#2.1 Wilcoxon test- test for the difference in mean
+# one-sided test- test for difference greater than or equal to 0
+# null: true shift is greater than 0 teacher donates more than non-teachers
+wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE)
+wilcox.test(teacher_money_amount, nonteacher_money_amount, paired = FALSE, correct = FALSE, alternative = "less")
+```
+
+```{r}
+#2.2 True fraction of teacher donors in the donor population
+teacher.donor.fraction <- round(as.numeric(table(Donors[,`Donor Is Teacher`])[2])/nrow(Donors)*100, 3)
+print(paste0("The true fraction of teacher donors is ", teacher.donor.fraction, "%"))
+
+# EDA: Check if teacher donors' donation pattern (except for the ones who only donate 1 dollar) follow normal distribution
+t <- sample(teacher$Donation.Amount, 10000)
+tt <- teacher[which(teacher$Donation.Amount<500 & teacher$Donation.Amount>1),6]$Donation.Amount
+qqplot(log(tt), rnorm(length(tt), mean(log(tt)), var(log(tt))))
+abline(0, 1)
+hist(log(tt))
+```
+
+
+## Scenario 3
+Question: Which state has the highest donor to population ratio? Is the amount of donation correlated with the region donors live in?
+Additional Dataset "Data" from online source: https://www.census.gov/data/tables/2017/demo/popest/state-total.html#par_textimage
+```{r}
+population <- fread("io/nst-est2017-01.csv")
+population$Population <- as.numeric(gsub(",","",population$Population))
+donors.state <- as.data.table(table(donors$`Donor State`))
+names(donors.state) <- c("State", "Donors.Count")
+donors.state <- donors.state[order(donors.state$Donors.Count, decreasing = TRUE),]
+donors.state <- merge(donors.state,population,by="State")
+donors.state$percentage <- donors.state$Donors.Count/donors.state$Population*100
+donors.state <- donors.state[order(donors.state$percentage, decreasing = TRUE),]
+donors.state <- merge(donors.state, state.total, by = "State")
+donors.state <- merge(donors.state, state.avg, by = "State")
+a <- summary(donors.state$donations.total)
+donors.state$indicator <- NULL
+donors.state[which(donors.state$donations.total < a[[2]]), 'indicator'] <- 'Low State Total Donations' 
+donors.state[which(donors.state$donations.total >= a[[2]]), 'indicator'] <- 'Medium State Total Donations' 
+donors.state[which(donors.state$donations.total >= a[[5]]), 'indicator'] <- 'High State Total Donations' 
+```
+
+```{r}
+# 3.1 Graphically Display the distribution of Donor Ratio per State
+hist(donors.state$percentage, breaks = 15, main = "Histogram of States' Donor/ State Population Ratio", xlab= "Donor/ State Population Ratio")
+donors.percentage <- donors.state$percentage[-1]
+normal.percentage <- rnorm(length(donors.percentage), mean(donors.percentage), var(donors.percentage))
+qqPlot(donors.percentage, xlab = "Theoretical Quantiles",
+ylab = "Observed Quantiles", main = "QQ-Plot: Donor/ State Population Ratio Quantile vs Normal Quantile")
+```
+
+```{r}
+# 3.2 Scatter Plot: Indicate states that has special donating pattern
+#qqplot(donors.state$donations.avg, donors.state$percentage)
+qplot(percentage, donations.avg, colour = indicator, data = donors.state,main = 'ScatterPlot of Donor/State Population Ratio Vs. State Average Donations', xlab = "Donor/State Population Ratio", ylab = "State Average Donations")
+```
+
+
+## Scenario 4
+Predict donors' donating behaviors to figure out how much a donor would donate for a project. 
+```{r}
+# 4.1 In total, find out the states that have the most donations.
+# Figure out the rank of total donation amount for each state
+state.total <-  aggregate(list(donations.total=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= sum)
+state.total <-  state.total[order(state.total$donations.total, decreasing = TRUE),]
+summary(state.total$donations.total)
+```
+
+```{r}
+# 4.2 On average, find out the states that have the most donation per transaction.
+# Figure out the rank of average donation amount per transaction for each state
+state.avg <-  aggregate(list(donations.avg=df_merged$Donation.Amount), by=list(State=df_merged$Donor.State), FUN= mean)
+state.avg <- state.avg[order(state.avg$donations.avg, decreasing = TRUE),]
+summary(state.avg$donations.avg)
+```
+
+```{r}
+# 4.3 Least Square Regression on predicting how much a donor will donate 
+sample <- merged[sample(nrow(merged), 100000), ]
+sample=na.omit(sample)
+ols = lm(formula = donations ~ Project.Type + Project.Grade.Level.Category+ Project.Cost+ School.Metro.Type + School.Percentage.Free.Lunch  , data = sample)
+summary(ols)
+```
+
+```{r}
+# 4.4 Ridge Regression on predicting how much a donor will donate 
+#ridge <- lm.ridge (donations ~ Project.Type + Project.Cost + School.Metro.Type + School.Percentage.Free.Lunch, data = sample, lambda = seq(0, 50, .001))
+# plot(ridge)
+# select(ridge)
+```
+
+```{r}
+set.seed(2018)
+
+sample = sample[c(4,7,10,11,17,18)]
+x=model.matrix(donations~.-1,data=sample) 
+y=sample$donations
+fit.ridge=glmnet(x,y,alpha=0)
+plot(fit.ridge,xvar="lambda",label=TRUE)
+cv.ridge=cv.glmnet(x,y,alpha=0)
+plot(cv.ridge)
+```
+
+```{r}
+# 4.5 Lasso Regression on predicting how much a donor will donate
+fit.lasso=glmnet(x,y,alpha=1)
+plot(fit.lasso,xvar="lambda",label=TRUE)
+cv.lasso=cv.glmnet(x,y)
+plot(cv.lasso)
+coef(cv.lasso)
+n <- nrow(x)
+train <- sample(1:n, size = floor(0.6*n), replace = FALSE) # use 60% data for training
+lasso.tr=glmnet(x[train,],y[train], alpha = 1)
+lasso.tr
+pred=predict(lasso.tr,x[-train,])
+# calculate the mse
+rmse= sqrt(apply((y[-train]-pred)^2,2,mean))
+plot(log(lasso.tr$lambda),rmse,type="b",xlab="Log(lambda)")
+lam.best=lasso.tr$lambda[order(rmse)[1]]
+lam.best
+coef(lasso.tr,s=lam.best)
+```
+
+
+## Scenario 6
+```{r}
+# 6.1 Test of Independence Checking if the funding duration time is independent of project cost
+# Clean out the outliers
+test <- merged[which(merged$Project.Current.Status == 'Fully Funded'),c(4,12,13,14,16)]
+test$expire.duration <- as.numeric(as.Date(test$Project.Expiration.Date)-as.Date(test$Project.Posted.Date))
+test$funded.duration <- as.numeric(as.Date(test$Project.Fully.Funded.Date)-as.Date(test$Project.Posted.Date))
+test <- test[,-c(3,4,5)]
+outlier.upper <- as.numeric(apply(test, FUN = mean, MARGIN = 2)+ 3* apply(test, FUN = sd, MARGIN = 2))
+outlier.lower <- as.numeric(apply(test, FUN = mean, MARGIN = 2)- 3* apply(test, FUN = sd, MARGIN = 2))
+
+test <- test[which(donations<outlier.upper[1]),]
+test <- test[which(donations>outlier.lower[1]),]
+test <- test[which(Project.Cost<outlier.upper[2]),]
+test <- test[which(Project.Cost>outlier.lower[2]),]
+test <- test[which(expire.duration<outlier.upper[3]),]
+test <- test[which(expire.duration>outlier.lower[3]),]
+test <- test[which(funded.duration<outlier.upper[4]),]
+test <- test[which(funded.duration>outlier.lower[4]),]
+
+# Attempt for a for loop but failed
+# for (i in c(1:length(outlier.lower))){
+#   test <- test[which(test[,i]>outlier.lower[i]),]
+#   test <- test[which(test[,i]<outlier.upper[i]),]
+# }
+```
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(test[,c(1,2)])
+boxplot(test[,c(3,4)])
+
+par(mfrow=c(2,3))
+hist(test$expire.duration)
+hist(test$funded.duration)
+hist(test$donations)
+hist(test$Project.Cost)
+hist(log(test$Project.Cost))
+hist(log(test$donations))
+
+par(mfrow= c(2,2))
+qqplot(test$donations,test$Project.Cost)
+qqplot(test$donations,test$expire.duration)
+qqplot(test$donations, test$funded.duration)
+qqplot(test$Project.Cost,test$funded.duration)
+
+par(mfrow = c(1,1))
+test_avg <- aggregate(list(donations=test$donations), by=list(Project.Cost=round(test$Project.Cost)), FUN=mean)
+test_avg <- test_avg[which(test_avg<=1590),]
+least.squares <- lm(donations~Project.Cost, data=test_avg)
+plot(test_avg$Project.Cost, test_avg$donations)
+abline(least.squares, col='red')
+summary(least.squares)
+```
+
+
+## Scenario 7: Recommender System
+```{r}
+# Merge datasets
+df <- merge(projects.categorized, projects[, c(1,2,12,14)], by='Project ID')
+df <- merge(df, donations[, c(1,3,5)], by='Project ID')[, -1]
+df <- merge(df, donors[, c(1,4)], by='Donor ID')[, -1]
+df <- merge(df, schools[, c(1,3,4)], by='School ID')[, -1]
+
+# Omit invalid values
+df <- na.omit(df)
+df <- df[`Project Grade Level Category` != 'unknown'][`School Metro Type` != 'unknown']
+
+# Arrange columns by category, numerical attribute, categorical attribute
+df <- df[, c(1,3,4,7,5,6,2)]
+
+# Convert some categorical columns to logical
+df$`Donor Is Teacher` <- df$`Donor Is Teacher` == 'Yes'
+df$`School Metro Type` <- df$`School Metro Type` == 'suburban'
+
+# Rename columns
+colnames(df) <- c('Subject.Category', 'Project.Cost', 'Donation.Amount', 'School.Percentage.Free.Lunch', 'Donor.Is.Teacher', 'School.Is.Suburban', 'Grade.Level')
+
+# Convert categorical columns to factor
+df$Subject.Category = as.factor(df$Subject.Category)
+df$Grade.Level = as.factor(df$Grade.Level)
+df
+```
+
+```{r}
+set.seed(0)
+training.size <- 50000
+num.trees <- 20
+
+# Randomly partition into training and testing set
+df <- df[sample(nrow(df))]
+df.training <- df[1:training.size]
+df.testing <- df[(training.size+1):nrow(df)]
+
+predictions <- data.table(Subject.Category=df.testing$Subject.Category)
+
+# Produce a random forest (of regression trees) for each subject category.
+# Outputs probability of a project being that subject category given project and
+# donor attributes.
+for (category in categories) {
+  df.category <- df.training
+  df.category$Subject.Category <- df.category$Subject.Category == category 
+  
+  model <- randomForest(Subject.Category ~ ., data=df.category, ntree=num.trees)
+  
+  title <- paste('Random Forest (of Regression Trees) for', category)
+  
+  print(getTree(model, labelVar=TRUE))
+  plot(model, main=title, cex.main=.9)
+  varImpPlot(model, main=title, cex.main=.9)
+  
+  predictions[, category] <- predict(model, df.testing)
+}
+```
+
+```{r}
+# Predict subject category by selecting the category with the highest random
+# forest (of regression trees) probability of being in that category.
+predictions$Predicted.Category <- colnames(predictions[, -1])[max.col(predictions[, -1])]
+predictions <- predictions[, c(1,10,2:9)]
+predictions
+```
+
+
+```{r}
+# Cross-Validation
+correct <- sum(predictions$Subject.Category == predictions$Predicted.Category)
+correct.column <- correct
+total.column <- nrow(predictions)
+
+for (category in categories) {
+  predictions.category <- predictions[Subject.Category == category]
+  
+  correct <- sum(predictions.category$Subject.Category == predictions.category$Predicted.Category)
+  correct.column <- c(correct.column, correct)
+  total.column <- c(total.column, nrow(predictions.category))
+}
+
+categories.accuracy <- data.table(Subject.Category=c('All Categories', categories),
+                                  Correct.Predictions=correct.column,
+                                  Total=total.column)
+categories.accuracy$Accuracy <- categories.accuracy$Correct.Predictions / categories.accuracy$Total
+categories.accuracy
+
+par(mai=c(1,2,.5,.5))
+barplot(categories.accuracy$Accuracy,
+        names.arg=categories.accuracy$Subject.Category, horiz=TRUE, las=1,
+        main='Cross-Validation Accuracy of Recommender System',
+        xlab='Proportion of Correct Classifications', axis.lty=1)
+```
