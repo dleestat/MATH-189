@@ -175,7 +175,7 @@ ggplot(merged_recent_year, aes(x=Project.Fully.Funded.Date,color=year,fill=year)
   labs(title="Donation amount for Teacher vs Nonteacher",x="Donation amount", y = "count")+
   theme_classic()
 ggplot(merged_recent_year,aes(x=month))+geom_histogram(aes(y=..count..), stat = 'bin',binwidth=1,color="darkblue", fill="lightblue")+facet_grid(~year)+
-  labs(title="Amount of project posted from 2013-2017",x="month for each year", y = "count")+theme_bw()
+  labs(title="Amount of project posted from 2013-2017",x="year", y = "count")+theme_bw()
 summary_donation_amount <- c(mean(df_merged$Donation.Amount),median(df_merged$Donation.Amount),quantile(df_merged$Donation.Amount, c(.25, .75)))
 #Chi squared godness fit test
 merged_2014 <- merged_projet[which(merged_projet$year==14),]
