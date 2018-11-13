@@ -3,6 +3,7 @@ Final\ Project/io/*
 .gitattributes
 *.html
 *.nb.html
+.Rapp.history
 .RData
 .RDataTmp
 .Rhistory
