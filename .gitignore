@@ -2,9 +2,12 @@
 Final\ Project/io/*
 .gitattributes
 *.html
+Lectures
 *.nb.html
 .Rapp.history
 .RData
 .RDataTmp
 .Rhistory
+Rubrics.pdf
+Syllabus.pdf
 *.webloc
